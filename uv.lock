@@ -780,7 +780,7 @@ cli = [
 ]
 
 [[package]]
-name = "mcp-llaimaindex"
+name = "mcp-llamaindex"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
@@ -793,6 +793,11 @@ test = [
     { name = "pytest" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "llama-index" },
@@ -800,6 +805,9 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'" },
 ]
 provides-extras = ["test"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.4.1" }]
 
 [[package]]
 name = "mdurl"

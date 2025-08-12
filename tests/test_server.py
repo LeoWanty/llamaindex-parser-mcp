@@ -1,7 +1,6 @@
-import pytest
 import asyncio
 import json
-from server import load_markdown_data
+from mcp_llamaindex.server import load_markdown_data
 
 def test_load_markdown_data_parses_content(tmp_path):
     # Create a dummy markdown file
