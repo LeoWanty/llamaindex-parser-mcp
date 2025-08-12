@@ -7,3 +7,6 @@
 # .env files, only accept the example file
 *.env
 !.example.env
+
+# cache files
+__pycache__
