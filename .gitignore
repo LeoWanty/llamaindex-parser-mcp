@@ -1,0 +1,9 @@
+.idea
+
+# created by virtualenv automatically
+.venv/Lib
+.venv
+
+# .env files, only accept the example file
+*.env
+!.example.env
