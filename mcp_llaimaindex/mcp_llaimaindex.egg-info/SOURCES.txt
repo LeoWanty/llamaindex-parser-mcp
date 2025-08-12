@@ -1,8 +1,0 @@
-pyproject.toml
-server.py
-mcp_llaimaindex.egg-info/PKG-INFO
-mcp_llaimaindex.egg-info/SOURCES.txt
-mcp_llaimaindex.egg-info/dependency_links.txt
-mcp_llaimaindex.egg-info/requires.txt
-mcp_llaimaindex.egg-info/top_level.txt
-tests/test_server.py
