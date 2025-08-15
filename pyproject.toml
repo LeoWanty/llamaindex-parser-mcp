@@ -2,8 +2,8 @@
 name = "mcp_llamaindex"
 version = "0.1.0"
 dependencies = [
-    "mcp[cli]",
     "llama-index",
+    "fastmcp>=2.11.3",
 ]
 
 [project.optional-dependencies]
