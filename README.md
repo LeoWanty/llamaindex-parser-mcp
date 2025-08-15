@@ -23,6 +23,13 @@ python src/mcp_llamaindex/server.py
 
 The server will start and listen for requests on `stdio`.
 
+## Dev mode
+
+To run the server in dev mode:
+```bash
+fastmcp dev src/mcp_llamaindex/server.py
+```
+
 ## Contributing
 
 We welcome contributions to this project! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) to learn how you can contribute.
