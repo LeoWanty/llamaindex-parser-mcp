@@ -10,3 +10,7 @@
 
 # cache files
 __pycache__
+
+
+# Package files
+**.egg-info
