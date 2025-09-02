@@ -1,3 +1,7 @@
+# Project related
+src/mcp_llamaindex/STATIC/md_documents/**  # Put your own documents there, stays private
+
+# Intelij
 .idea
 
 # created by virtualenv automatically
