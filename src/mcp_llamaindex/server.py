@@ -30,7 +30,7 @@ async def load_markdown_data(path: str | Path | list[str] | list[Path]) -> str:
                 path = [path]
             documents = SimpleDirectoryReader(input_files=path)
 
-        documents=documents.load_data()
+        documents = documents.load_data()
         parser = MarkdownNodeParser()
         nodes = parser.get_nodes_from_documents(documents)
         nodes_as_dicts = [node.to_dict() for node in nodes]
