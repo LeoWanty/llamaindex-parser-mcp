@@ -24,7 +24,6 @@ def load_documents(data_dir: str) -> list:
     if not p.exists():
         raise FileNotFoundError(f"Data directory '{data_dir}' not found. Please create it and add markdown files.")
 
-
     reader = SimpleDirectoryReader(input_dir=data_dir)
     documents = reader.load_data()
 
@@ -38,11 +37,10 @@ def setup_llm_and_embeddings():
     """
     # Optional: Configure local LLM (e.g., Llama 3 via Ollama)
     Settings.llm = LMStudio(
-        model_name="qwen/qwen3-4b-thinking-2507",
-        # model_name="openai/gpt-oss-20b",
+        model_name="openai/gpt-oss-20b",
         base_url="http://localhost:1234/v1",
-        # request_timeout=120.0,  # Increased timeout for potentially longer generations
-        # context_window=4096  # Important for memory management with local LLMs
+        request_timeout=120.0,  # Increased timeout for potentially longer generations
+        context_window=4096  # Important for memory management with local LLMs
     )
 
     # Configure local embedding model (e.g., BGE Large)
