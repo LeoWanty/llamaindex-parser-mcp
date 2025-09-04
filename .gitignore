@@ -19,3 +19,6 @@ __pycache__
 # Package files
 **.egg-info
 dist
+
+# Local STATIC content, unique to each user
+src/mcp_llamaindex/STATIC/**
