@@ -1,14 +1,16 @@
-import asyncio
 import json
+
+import pytest
 
 from mcp_llamaindex.server import load_markdown_data
 
 from conftest import GENERATED_EXAMPLES_DIR
 
-def test_load_markdown_data_parses_content():
-    # Call the tool
-    a_result = load_markdown_data(GENERATED_EXAMPLES_DIR / "example_1.md")
-    result = json.loads(asyncio.run(a_result))
+@pytest.mark.asyncio
+async def test_load_markdown_data_parses_content():
+    # Call the tool - Test the function (fn)
+    a_result = await load_markdown_data.fn(GENERATED_EXAMPLES_DIR / "example_1.md")
+    result = json.loads(a_result)
 
     # Assert the result
     assert isinstance(result, list)
