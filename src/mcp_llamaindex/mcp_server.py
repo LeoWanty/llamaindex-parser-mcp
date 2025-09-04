@@ -52,7 +52,7 @@ async def app_lifespan(app):
 
 # Initialize FastMCP server
 mcp = FastMCP(
-    "llamaindex_loader2",
+    "RAG_on_md_docs",
     lifespan=app_lifespan,
 )
 
