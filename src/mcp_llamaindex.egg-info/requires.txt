@@ -1,5 +1,0 @@
-mcp[cli]
-llama-index
-
-[test]
-pytest
