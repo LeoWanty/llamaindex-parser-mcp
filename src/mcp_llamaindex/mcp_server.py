@@ -11,13 +11,6 @@ from mcp_llamaindex.rag_pipeline import (
     teardown_llm_and_embeddings
 )
 
-mcp = FastMCP(
-    name="Local Markdown RAG Server",
-    instructions="This server provides Retrieval-Augmented Generation (RAG) capabilities over your local markdown documentation."
-                 "You can ask questions about your documents, and the server will retrieve relevant information and generate an answer.",
-    dependencies=["llama-index", "llama-index-llms-ollama", "llama-index-vector-stores-chroma", "chromadb"]
-)
-
 # Global variable to hold the initialized RAG query engine
 rag_query_engine = None
 
@@ -52,7 +45,10 @@ async def app_lifespan(app):
 
 # Initialize FastMCP server
 mcp = FastMCP(
-    "RAG_on_md_docs",
+    name="Local Markdown RAG Server",
+    instructions="This server provides Retrieval-Augmented Generation (RAG) capabilities over your local markdown documentation."
+                 "You can ask questions about your documents, and the server will retrieve relevant information and generate an answer.",
+    dependencies=["llama-index", "llama-index-llms-ollama", "llama-index-vector-stores-chroma", "chromadb"],
     lifespan=app_lifespan,
 )
 
