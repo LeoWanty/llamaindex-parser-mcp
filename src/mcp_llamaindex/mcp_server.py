@@ -1,6 +1,7 @@
+import logging
 from contextlib import asynccontextmanager
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 
 from mcp_llamaindex.config import STATIC_DIR
 from mcp_llamaindex.rag_pipeline import (
@@ -20,25 +21,25 @@ async def app_lifespan(app):
     """
     Initializes the LlamaIndex RAG pipeline when the MCP server starts.
     """
-    print("Starting up: Initializing RAG pipeline...")
+    logging.debug("Starting up: Initializing RAG pipeline...")
     try:
         setup_llm_and_embeddings()
         documents = load_documents(STATIC_DIR / "md_documents")
         if not documents:
-            print("No markdown documents found. RAG will not function.")
+            logging.warning("No markdown documents found. RAG will not function.")
 
         index = get_or_create_index(documents, persist_dir = STATIC_DIR / "vector_store")
         global rag_query_engine
         rag_query_engine = get_rag_query_engine(index)
-        print("RAG pipeline initialized successfully.")
+        logging.debug("RAG pipeline initialized successfully.")
     except Exception as e:
-        print(f"Error initializing RAG pipeline: {e}")
+        logging.error(f"Error initializing RAG pipeline: {e}")
         raise (e)
         # Depending on severity, you might want to prevent server from starting
 
     yield
 
-    print("Shutting down: RAG pipeline cleanup...")
+    logging.debug("Shutting down: RAG pipeline cleanup...")
     teardown_llm_and_embeddings()
     del rag_query_engine
 
@@ -54,7 +55,7 @@ mcp = FastMCP(
 
 
 @mcp.tool()
-def query_markdown_docs(query: str) -> str:
+async def query_markdown_docs(query: str, ctx:Context) -> str:
     """
     Answers questions by performing Retrieval-Augmented Generation (RAG)
     over the local markdown documentation. Provide a clear and concise
@@ -69,6 +70,7 @@ def query_markdown_docs(query: str) -> str:
     if rag_query_engine is None:
         return "Error: RAG pipeline not initialized. Please ensure markdown files are present, Ollama is running, and the server started correctly."
 
+    await ctx.info("Test logger")
     # return f"Received query for RAG: '{query}'"
     response = rag_query_engine.query(query)
     return str(response)
@@ -84,7 +86,6 @@ def list_markdown_files() -> list[str]:
         return ["No directory found."]
 
     markdown_files = [str(f.name) for f in data_dir.iterdir() if f.is_file() and f.suffix == ".md"]
-    print(f"Listing {len(markdown_files)} markdown files.")
     return markdown_files
 
 if __name__ == "__main__":

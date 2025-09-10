@@ -1,3 +1,5 @@
+import logging
+
 import chromadb
 
 from pathlib import Path
@@ -27,7 +29,7 @@ def load_documents(data_dir: str) -> list:
     reader = SimpleDirectoryReader(input_dir=data_dir)
     documents = reader.load_data()
 
-    print(f"Loaded {len(documents)} documents from '{data_dir}'.")
+    logging.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
     return documents
 
 
@@ -49,7 +51,7 @@ def setup_llm_and_embeddings():
     )
 
     # The same embedding model must be used for both indexing and querying
-    print("LLM and embedding model configured.")
+    logging.debug("LLM and embedding model configured.")
 
 
 def teardown_llm_and_embeddings():
@@ -62,7 +64,7 @@ def teardown_llm_and_embeddings():
     # Reset embedding model to default
     Settings.embed_model = None
 
-    print("LLM and embedding model settings have been reset.")
+    logging.debug("LLM and embedding model settings have been reset.")
 
 
 def get_or_create_index(documents: list, persist_dir: str):
@@ -85,9 +87,9 @@ def get_or_create_index(documents: list, persist_dir: str):
         # Note: For ChromaDB, `load_index_from_storage` needs the vector_store in storage_context
         storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir=str(persist_dir))
         index = load_index_from_storage(storage_context=storage_context)
-        print("Loaded existing LlamaIndex from disk using ChromaDB.")
+        logging.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
     except Exception as e:  # Catching a broad exception for demonstration, be more specific in production
-        print(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
+        logging.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
         index = VectorStoreIndex.from_documents(
             documents,
@@ -95,7 +97,7 @@ def get_or_create_index(documents: list, persist_dir: str):
         )
         # Persist the newly created index
         index.storage_context.persist(persist_dir=persist_dir)
-        print("New LlamaIndex created and persisted to disk.")
+        logging.debug("New LlamaIndex created and persisted to disk.")
 
     return index
 
@@ -111,5 +113,5 @@ def get_rag_query_engine(index: VectorStoreIndex, top_k: int = 3) -> RetrieverQu
         retriever=retriever,
         response_synthesizer=response_synthesizer
     )
-    print("LlamaIndex query engine created.")
+    logging.debug("LlamaIndex query engine created.")
     return query_engine
