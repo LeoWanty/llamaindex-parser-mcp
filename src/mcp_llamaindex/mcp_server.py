@@ -1,6 +1,6 @@
 import logging
 
-from fastmcp import FastMCP, Context
+from fastmcp import FastMCP
 
 from mcp_llamaindex.config import STATIC_DIR
 from mcp_llamaindex.rag_pipeline import (
