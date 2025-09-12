@@ -1,8 +1,8 @@
 import logging
+from pathlib import Path
 
 import chromadb
 
-from pathlib import Path
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.lmstudio import LMStudio
 from llama_index.core import (
