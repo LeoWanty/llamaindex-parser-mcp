@@ -68,4 +68,9 @@ def list_markdown_files() -> list[str]:
     return markdown_files
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] %(levelname)s\t%(message)s",
+        datefmt="%m/%d/%y %H:%M:%S",
+    )
     mcp.run(transport='stdio')
