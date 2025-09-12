@@ -1,5 +1,4 @@
 import logging
-from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP, Context
 
@@ -9,39 +8,22 @@ from mcp_llamaindex.rag_pipeline import (
     setup_llm_and_embeddings,
     get_or_create_index,
     get_rag_query_engine,
-    teardown_llm_and_embeddings
 )
 
-# Global variable to hold the initialized RAG query engine
-rag_query_engine = None
+# TODO : find a cleaner pattern to handle index and vector store init
+# TODO : find a pattern to handle teardown with FastMCP
+try:
+    logging.info("Starting up: Initializing RAG pipeline...")
+    setup_llm_and_embeddings()
+    documents = load_documents(STATIC_DIR / "md_documents")
+    if not documents:
+        logging.warning("No markdown documents found. RAG will not function.")
 
-
-@asynccontextmanager
-async def app_lifespan(app):
-    """
-    Initializes the LlamaIndex RAG pipeline when the MCP server starts.
-    """
-    logging.debug("Starting up: Initializing RAG pipeline...")
-    try:
-        setup_llm_and_embeddings()
-        documents = load_documents(STATIC_DIR / "md_documents")
-        if not documents:
-            logging.warning("No markdown documents found. RAG will not function.")
-
-        index = get_or_create_index(documents, persist_dir = STATIC_DIR / "vector_store")
-        global rag_query_engine
-        rag_query_engine = get_rag_query_engine(index)
-        logging.debug("RAG pipeline initialized successfully.")
-    except Exception as e:
-        logging.error(f"Error initializing RAG pipeline: {e}")
-        raise (e)
-        # Depending on severity, you might want to prevent server from starting
-
-    yield
-
-    logging.debug("Shutting down: RAG pipeline cleanup...")
-    teardown_llm_and_embeddings()
-    del rag_query_engine
+    index = get_or_create_index(documents, persist_dir=STATIC_DIR / "vector_store")
+    rag_query_engine = get_rag_query_engine(index)
+    logging.info("RAG pipeline initialized successfully.")
+except Exception as e:
+    raise e
 
 
 # Initialize FastMCP server
@@ -50,7 +32,6 @@ mcp = FastMCP(
     instructions="This server provides Retrieval-Augmented Generation (RAG) capabilities over your local markdown documentation."
                  "You can ask questions about your documents, and the server will retrieve relevant information and generate an answer.",
     dependencies=["llama-index", "llama-index-llms-ollama", "llama-index-vector-stores-chroma", "chromadb"],
-    lifespan=app_lifespan,
 )
 
 
@@ -70,8 +51,6 @@ async def query_markdown_docs(query: str, ctx:Context) -> str:
     if rag_query_engine is None:
         return "Error: RAG pipeline not initialized. Please ensure markdown files are present, Ollama is running, and the server started correctly."
 
-    await ctx.info("Test logger")
-    # return f"Received query for RAG: '{query}'"
     response = rag_query_engine.query(query)
     return str(response)
 
