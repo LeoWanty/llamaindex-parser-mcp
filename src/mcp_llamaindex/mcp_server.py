@@ -36,7 +36,7 @@ mcp = FastMCP(
 
 
 @mcp.tool()
-async def query_markdown_docs(query: str, ctx:Context) -> str:
+async def query_markdown_docs(query: str) -> str:
     """
     Answers questions by performing Retrieval-Augmented Generation (RAG)
     over the local markdown documentation. Provide a clear and concise
