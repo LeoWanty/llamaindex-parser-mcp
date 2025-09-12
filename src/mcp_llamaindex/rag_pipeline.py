@@ -93,7 +93,6 @@ class DirectoryRagServer(BaseServer):
         chroma_collection = db.get_or_create_collection("markdown_rag_collection")
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
-        index = None
         try:
             # Attempt to load existing index from storage context
             # Note: For ChromaDB, `load_index_from_storage` needs the vector_store in storage_context
