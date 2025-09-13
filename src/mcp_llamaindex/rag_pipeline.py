@@ -51,7 +51,32 @@ class RagConfig(BaseModel):
 
 class DirectoryRagServer(BaseServer):
     """A server for RAG."""
-    server_name: str = "DirectoryRagServer"
+    # FastMCP server
+    server_name: str = "Directory Rag Server"
+    server_instructions: str = """
+This server provides Retrieval-Augmented Generation (RAG) capabilities over your local Markdown documentation.
+You can ask questions about your documents, and the server will retrieve relevant information and generate an answer.
+"""
+    server_dependencies: list[str] = ["llama-index", "llama-index-llms-ollama", "llama-index-vector-stores-chroma", "chromadb"]
+
+    # RAG pipeline
+    rag_config: RagConfig = Field(default_factory=RagConfig)
+
+    @property
+    def documents(self) -> list:
+        return self._load_documents(self.rag_config.data_dir)
+
+    @property
+    def index(self) -> VectorStoreIndex:
+        return self._get_or_create_index()
+
+    @property
+    def rag_query_engine(self) -> RetrieverQueryEngine:
+        return self._instantiate_rag_query_engine(self.index, self.rag_config.top_k)
+
+    def __hash__(self):
+        # Render instances hashable for lru_caching with self
+        return hash(self.server_name)
 
     def get_tools(self) -> list[FastMCPTool]:
         """Get the tools for the server."""
