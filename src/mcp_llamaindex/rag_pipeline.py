@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from pydantic import Field, BaseModel
 
 import chromadb
 from fastmcp.tools import Tool as FastMCPTool
@@ -17,7 +18,35 @@ from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.response_synthesizers import CompactAndRefine
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
+from mcp_llamaindex.config import STATIC_DIR
 from mcp_llamaindex.servers.base import BaseServer
+
+
+# Optional: Configure local LLM (e.g., Llama 3 via Ollama)
+Settings.llm = LMStudio(
+    model_name="openai/gpt-oss-20b",
+    base_url="http://localhost:1234/v1",
+    request_timeout=120.0,  # Increased timeout for potentially longer generations
+    context_window=4096  # Important for memory management with local LLMs
+)
+
+# Configure local embedding model (e.g., BGE Large)
+Settings.embed_model = HuggingFaceEmbedding(
+    model_name="BAAI/bge-large-en-v1.5",
+)
+
+# The same embedding model must be used for both indexing and querying
+logging.debug("LLM and embedding model configured.")
+
+
+class RagConfig(BaseModel):
+    """Configuration for RAG."""
+    # vector_store
+    persist_dir: str | Path = STATIC_DIR / "vector_store"
+    data_dir: str | Path = STATIC_DIR / "md_documents"
+
+    # retrieval
+    top_k: int = 3
 
 
 class DirectoryRagServer(BaseServer):
