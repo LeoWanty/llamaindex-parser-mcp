@@ -32,11 +32,41 @@ class DirectoryRagServer(BaseServer):
 
     def _load_documents(self, data_dir: str) -> list:
         """
-        Loads all markdown documents from the specified directory.
+        Answers questions by performing Retrieval-Augmented Generation (RAG)
+        over the local Markdown documentation. Provide a clear and concise
+        question related to the documents.
+
+        Args:
+            query (str): The question to ask about the Markdown documents.
+
+        Returns:
+            str: The generated answer based on the retrieved context.
+        """
+        if self.rag_query_engine is None:
+            return "Error: RAG pipeline not initialized. Please ensure Markdown files are present, Ollama is running, and the server started correctly."
+
+        response = self.rag_query_engine.query(query)
+        return str(response)
+
+    def list_markdown_files(self) -> list[str]:
+        """
+        Lists the names of all Markdown files available in the RAG knowledge base.
+        """
+        if not self.rag_config.data_dir.exists():
+            return ["No directory found."]
+
+        markdown_files = [str(f.name) for f in self.rag_config.data_dir.iterdir() if f.is_file() and f.suffix == ".md"]
+        return markdown_files
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _load_documents(data_dir: str | Path) -> list:
+        """
+        Loads all Markdown documents from the specified directory.
         """
         p = Path(data_dir)
         if not p.exists():
-            raise FileNotFoundError(f"Data directory '{data_dir}' not found. Please create it and add markdown files.")
+            raise FileNotFoundError(f"Data directory '{data_dir}' not found. Please create it and add Markdown files.")
 
         reader = SimpleDirectoryReader(input_dir=data_dir)
         documents = reader.load_data()
@@ -81,7 +111,7 @@ class DirectoryRagServer(BaseServer):
 
     def _get_or_create_index(self, documents: list, persist_dir: str):
         """
-        Loads an existing LlamaIndex from disk or creates a new one if it doesn't exist.
+        Loads an existing LlamaIndex from the disk or creates a new one if it doesn't exist.
         Persists the index using ChromaDB.
         """
         persist_dir = Path(persist_dir)
@@ -94,7 +124,7 @@ class DirectoryRagServer(BaseServer):
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
         try:
-            # Attempt to load existing index from storage context
+            # Attempt to load an existing index from storage context
             # Note: For ChromaDB, `load_index_from_storage` needs the vector_store in storage_context
             storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir=str(persist_dir))
             index = load_index_from_storage(storage_context=storage_context)
