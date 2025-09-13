@@ -1,9 +1,14 @@
 import logging
+from functools import lru_cache
 from pathlib import Path
+from typing import Any
+
+from fastmcp import FastMCP
 from pydantic import Field, BaseModel
 
 import chromadb
 from fastmcp.tools import Tool as FastMCPTool
+from fastmcp.resources import Resource as FastMCPResource
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.lmstudio import LMStudio
 from llama_index.core import (
@@ -81,10 +86,28 @@ You can ask questions about your documents, and the server will retrieve relevan
     def get_tools(self) -> list[FastMCPTool]:
         """Get the tools for the server."""
         return [
-            FastMCPTool.from_function(fn=self.query),
+            FastMCPTool.from_function(fn=self.query_markdown_docs),
         ]
 
-    def _load_documents(self, data_dir: str) -> list:
+    def get_resources(self) -> list[FastMCPResource]:
+        """Get the resources for the server."""
+        return [
+            FastMCPResource.from_function(fn=self.list_markdown_files, uri="data://list-markdown-files"),
+        ]
+
+    def as_server(self) -> FastMCP:
+        """Instantiate a FastMCP server."""
+        mcp: FastMCP[Any] = FastMCP[Any](
+            name=self.server_name,
+            instructions=self.server_instructions,
+            dependencies=self.server_dependencies,
+        )
+
+        [mcp.add_tool(tool=tool) for tool in self.get_tools()]
+        [mcp.add_resource(resource=resource) for resource in self.get_resources()]
+        return mcp
+
+    def query_markdown_docs(self, query: str) -> str:
         """
         Answers questions by performing Retrieval-Augmented Generation (RAG)
         over the local Markdown documentation. Provide a clear and concise
