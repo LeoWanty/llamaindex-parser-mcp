@@ -151,47 +151,13 @@ You can ask questions about your documents, and the server will retrieve relevan
         logging.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
         return documents
 
-
-    def _setup_llm_and_embeddings(self):
-        """
-        Configures LlamaIndex to use LLM and embedding model.
-        """
-        # Optional: Configure local LLM (e.g., Llama 3 via Ollama)
-        Settings.llm = LMStudio(
-            model_name="openai/gpt-oss-20b",
-            base_url="http://localhost:1234/v1",
-            request_timeout=120.0,  # Increased timeout for potentially longer generations
-            context_window=4096  # Important for memory management with local LLMs
-        )
-
-        # Configure local embedding model (e.g., BGE Large)
-        Settings.embed_model = HuggingFaceEmbedding(
-            model_name="BAAI/bge-large-en-v1.5",
-        )
-
-        # The same embedding model must be used for both indexing and querying
-        logging.debug("LLM and embedding model configured.")
-
-
-    def _teardown_llm_and_embeddings(self):
-        """
-        Resets LlamaIndex global settings to their default values.
-        """
-        # Reset LLM to default (usually None or the default LlamaIndex provider)
-        Settings.llm = None
-
-        # Reset embedding model to default
-        Settings.embed_model = None
-
-        logging.debug("LLM and embedding model settings have been reset.")
-
-
-    def _get_or_create_index(self, documents: list, persist_dir: str):
+    @lru_cache(maxsize=1)
+    def _get_or_create_index(self):
         """
         Loads an existing LlamaIndex from the disk or creates a new one if it doesn't exist.
         Persists the index using ChromaDB.
         """
-        persist_dir = Path(persist_dir)
+        persist_dir = Path(self.rag_config.persist_dir)
         if not persist_dir.exists():
             persist_dir.mkdir(parents=True)
 
@@ -206,11 +172,11 @@ You can ask questions about your documents, and the server will retrieve relevan
             storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir=str(persist_dir))
             index = load_index_from_storage(storage_context=storage_context)
             logging.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
-        except Exception as e:  # Catching a broad exception for demonstration, be more specific in production
+        except Exception as e:  # TODO : Catching a broad exception for demonstration, be more specific in production
             logging.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             index = VectorStoreIndex.from_documents(
-                documents,
+                self.documents,
                 storage_context=storage_context,
             )
             # Persist the newly created index
@@ -219,8 +185,9 @@ You can ask questions about your documents, and the server will retrieve relevan
 
         return index
 
-
-    def _get_rag_query_engine(self, index: VectorStoreIndex, top_k: int = 3) -> RetrieverQueryEngine:
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _instantiate_rag_query_engine(index: VectorStoreIndex, top_k: int = 3) -> RetrieverQueryEngine:
         """
         Creates and returns a LlamaIndex query engine for RAG.
         """
