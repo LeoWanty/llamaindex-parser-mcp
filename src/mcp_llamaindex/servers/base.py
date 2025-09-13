@@ -18,9 +18,4 @@ class BaseServer(BaseModel, ABC):
     @abstractmethod
     def as_server(self) -> FastMCP[Any]:
         """Convert the server to a FastMCP server."""
-
-        mcp: FastMCP[Any] = FastMCP[Any](name=self.server_name)
-
-        [mcp.add_tool(tool=tool) for tool in self.get_tools()]
-
-        return mcp
+        ...
