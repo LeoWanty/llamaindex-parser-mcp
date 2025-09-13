@@ -21,5 +21,5 @@ class BaseServer(BaseModel, ABC):
 
     @abstractmethod
     def as_server(self) -> FastMCP[Any]:
-        """Convert the server to a FastMCP server."""
+        """Instantiate a FastMCP server."""
         ...
