@@ -30,7 +30,7 @@ class DirectoryRagServer(BaseServer):
             FastMCPTool.from_function(fn=self.query),
         ]
 
-    def _load_documents(data_dir: str) -> list:
+    def _load_documents(self, data_dir: str) -> list:
         """
         Loads all markdown documents from the specified directory.
         """
@@ -45,7 +45,7 @@ class DirectoryRagServer(BaseServer):
         return documents
 
 
-    def _setup_llm_and_embeddings():
+    def _setup_llm_and_embeddings(self):
         """
         Configures LlamaIndex to use LLM and embedding model.
         """
@@ -66,7 +66,7 @@ class DirectoryRagServer(BaseServer):
         logging.debug("LLM and embedding model configured.")
 
 
-    def _teardown_llm_and_embeddings():
+    def _teardown_llm_and_embeddings(self):
         """
         Resets LlamaIndex global settings to their default values.
         """
@@ -79,7 +79,7 @@ class DirectoryRagServer(BaseServer):
         logging.debug("LLM and embedding model settings have been reset.")
 
 
-    def _get_or_create_index(documents: list, persist_dir: str):
+    def _get_or_create_index(self, documents: list, persist_dir: str):
         """
         Loads an existing LlamaIndex from disk or creates a new one if it doesn't exist.
         Persists the index using ChromaDB.
@@ -113,7 +113,7 @@ class DirectoryRagServer(BaseServer):
         return index
 
 
-    def _get_rag_query_engine(index: VectorStoreIndex, top_k: int = 3) -> RetrieverQueryEngine:
+    def _get_rag_query_engine(self, index: VectorStoreIndex, top_k: int = 3) -> RetrieverQueryEngine:
         """
         Creates and returns a LlamaIndex query engine for RAG.
         """
