@@ -79,10 +79,6 @@ You can ask questions about your documents, and the server will retrieve relevan
     def rag_query_engine(self) -> RetrieverQueryEngine:
         return self._instantiate_rag_query_engine(self.index, self.rag_config.top_k)
 
-    def __hash__(self):
-        # Render instances hashable for lru_caching with self
-        return hash(self.server_name)
-
     def get_tools(self) -> list[FastMCPTool]:
         """Get the tools for the server."""
         return [

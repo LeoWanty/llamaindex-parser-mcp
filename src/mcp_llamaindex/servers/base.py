@@ -12,6 +12,10 @@ class BaseServer(BaseModel, ABC):
 
     model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
 
+    def __hash__(self):
+        # Render instances hashable for lru_caching with self
+        return hash(self.server_name)
+
     @abstractmethod
     def get_tools(self) -> list[FastMCPTool]: ...
 
