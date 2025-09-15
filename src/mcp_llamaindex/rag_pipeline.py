@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.utilities.logging import get_logger
 from pydantic import Field, BaseModel
 
 import chromadb
@@ -26,6 +27,7 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from mcp_llamaindex.config import STATIC_DIR
 from mcp_llamaindex.servers.base import BaseServer
 
+logger = get_logger(__name__)
 
 # Optional: Configure local LLM (e.g., Llama 3 via Ollama)
 Settings.llm = LMStudio(
@@ -41,7 +43,7 @@ Settings.embed_model = HuggingFaceEmbedding(
 )
 
 # The same embedding model must be used for both indexing and querying
-logging.debug("LLM and embedding model configured.")
+logger.debug("LLM and embedding model configured.")
 
 
 class RagConfig(BaseModel):
@@ -144,7 +146,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         reader = SimpleDirectoryReader(input_dir=data_dir)
         documents = reader.load_data()
 
-        logging.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
+        logger.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
         return documents
 
     @lru_cache(maxsize=1)
@@ -167,9 +169,9 @@ You can ask questions about your documents, and the server will retrieve relevan
             # Note: For ChromaDB, `load_index_from_storage` needs the vector_store in storage_context
             storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir=str(persist_dir))
             index = load_index_from_storage(storage_context=storage_context)
-            logging.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
+            logger.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
         except Exception as e:  # TODO : Catching a broad exception for demonstration, be more specific in production
-            logging.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
+            logger.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             index = VectorStoreIndex.from_documents(
                 self.documents,
@@ -177,7 +179,7 @@ You can ask questions about your documents, and the server will retrieve relevan
             )
             # Persist the newly created index
             index.storage_context.persist(persist_dir=persist_dir)
-            logging.debug("New LlamaIndex created and persisted to disk.")
+            logger.debug("New LlamaIndex created and persisted to disk.")
 
         return index
 
@@ -194,5 +196,5 @@ You can ask questions about your documents, and the server will retrieve relevan
             retriever=retriever,
             response_synthesizer=response_synthesizer
         )
-        logging.debug("LlamaIndex query engine created.")
+        logger.debug("LlamaIndex query engine created.")
         return query_engine
