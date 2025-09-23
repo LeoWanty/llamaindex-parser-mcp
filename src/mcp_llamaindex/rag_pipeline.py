@@ -84,6 +84,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         """Get the tools for the server."""
         return [
             FastMCPTool.from_function(fn=self.query_markdown_docs),
+            FastMCPTool.from_function(fn=self.query_markdown_docs_bis),
         ]
 
     def get_resources(self) -> list[FastMCPResource]:
@@ -121,6 +122,33 @@ You can ask questions about your documents, and the server will retrieve relevan
 
         response = self.rag_query_engine.query(query)
         return str(response)
+
+    async def query_markdown_docs_bis(self, query: str, ctx: Context) -> str:
+        """
+        Answers questions by performing Retrieval-Augmented Generation (RAG)
+        over the local Markdown documentation. Provide a clear and concise
+        question related to the documents.
+
+        SUMMARIZING IS DONE THROUGH LLM SAMPLING, NOT BY THE SERVER ITSELF.
+
+        Args:
+            ctx: FastMCP context.
+            query (str): The question to ask about the Markdown documents.
+
+        Returns:
+            str: The generated answer based on the retrieved context.
+        """
+        if self.rag_query_engine is None:
+            return "Error: RAG pipeline not initialized. Please ensure Markdown files are present, Ollama is running, and the server started correctly."
+
+        retrieved_docs = self.rag_query_engine.retrieve(query)
+        question_prompt = f"Query: {query}"
+        system_prompt = "You're an assistant that summarizes documents to answer a user query."
+        prompt = "\n\n___\n\n".join(
+            [question_prompt] + [f"Document {i}:\n"+ node.get_content() for i, node in enumerate(retrieved_docs)]
+        )
+        response = await ctx.sample(prompt, system_prompt=system_prompt, max_tokens=10000)
+        return response.text
 
     def list_markdown_files(self) -> list[str]:
         """
