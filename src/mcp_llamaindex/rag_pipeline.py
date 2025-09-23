@@ -1,9 +1,9 @@
-import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
+from fastmcp.utilities.logging import get_logger
 from pydantic import Field, BaseModel
 
 import chromadb
@@ -26,6 +26,7 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from mcp_llamaindex.config import STATIC_DIR
 from mcp_llamaindex.servers.base import BaseServer
 
+logger = get_logger(__name__)
 
 # Optional: Configure local LLM (e.g., Llama 3 via Ollama)
 Settings.llm = LMStudio(
@@ -41,7 +42,7 @@ Settings.embed_model = HuggingFaceEmbedding(
 )
 
 # The same embedding model must be used for both indexing and querying
-logging.debug("LLM and embedding model configured.")
+logger.debug("LLM and embedding model configured.")
 
 
 class RagConfig(BaseModel):
@@ -83,6 +84,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         """Get the tools for the server."""
         return [
             FastMCPTool.from_function(fn=self.query_markdown_docs),
+            FastMCPTool.from_function(fn=self.query_markdown_docs_bis),
         ]
 
     def get_resources(self) -> list[FastMCPResource]:
@@ -121,6 +123,33 @@ You can ask questions about your documents, and the server will retrieve relevan
         response = self.rag_query_engine.query(query)
         return str(response)
 
+    async def query_markdown_docs_bis(self, query: str, ctx: Context) -> str:
+        """
+        Answers questions by performing Retrieval-Augmented Generation (RAG)
+        over the local Markdown documentation. Provide a clear and concise
+        question related to the documents.
+
+        SUMMARIZING IS DONE THROUGH LLM SAMPLING, NOT BY THE SERVER ITSELF.
+
+        Args:
+            ctx: FastMCP context.
+            query (str): The question to ask about the Markdown documents.
+
+        Returns:
+            str: The generated answer based on the retrieved context.
+        """
+        if self.rag_query_engine is None:
+            return "Error: RAG pipeline not initialized. Please ensure Markdown files are present, Ollama is running, and the server started correctly."
+
+        retrieved_docs = self.rag_query_engine.retrieve(query)
+        question_prompt = f"Query: {query}"
+        system_prompt = "You're an assistant that summarizes documents to answer a user query."
+        prompt = "\n\n___\n\n".join(
+            [question_prompt] + [f"Document {i}:\n"+ node.get_content() for i, node in enumerate(retrieved_docs)]
+        )
+        response = await ctx.sample(prompt, system_prompt=system_prompt, max_tokens=10000)
+        return response.text
+
     def list_markdown_files(self) -> list[str]:
         """
         Lists the names of all Markdown files available in the RAG knowledge base.
@@ -144,7 +173,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         reader = SimpleDirectoryReader(input_dir=data_dir)
         documents = reader.load_data()
 
-        logging.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
+        logger.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
         return documents
 
     @lru_cache(maxsize=1)
@@ -167,9 +196,9 @@ You can ask questions about your documents, and the server will retrieve relevan
             # Note: For ChromaDB, `load_index_from_storage` needs the vector_store in storage_context
             storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir=str(persist_dir))
             index = load_index_from_storage(storage_context=storage_context)
-            logging.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
+            logger.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
         except Exception as e:  # TODO : Catching a broad exception for demonstration, be more specific in production
-            logging.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
+            logger.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             index = VectorStoreIndex.from_documents(
                 self.documents,
@@ -177,7 +206,7 @@ You can ask questions about your documents, and the server will retrieve relevan
             )
             # Persist the newly created index
             index.storage_context.persist(persist_dir=persist_dir)
-            logging.debug("New LlamaIndex created and persisted to disk.")
+            logger.debug("New LlamaIndex created and persisted to disk.")
 
         return index
 
@@ -194,5 +223,5 @@ You can ask questions about your documents, and the server will retrieve relevan
             retriever=retriever,
             response_synthesizer=response_synthesizer
         )
-        logging.debug("LlamaIndex query engine created.")
+        logger.debug("LlamaIndex query engine created.")
         return query_engine
