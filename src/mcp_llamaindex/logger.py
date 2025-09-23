@@ -1,7 +1,6 @@
 import logging
 import sys
 
-from fastmcp.utilities.logging import get_logger
 from mcp_llamaindex.config import SERVER_LOG_FILE, ENV_TYPE
 
 # Set some new handlers and formatters for FastMCP server
