@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP, Context
-from mcp_llamaindex.logger import get_logger
+from fastmcp.utilities.logging import get_logger
 from pydantic import Field, BaseModel
 
 import chromadb
