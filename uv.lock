@@ -1477,11 +1477,8 @@ dependencies = [
     { name = "llama-index-embeddings-huggingface" },
     { name = "llama-index-llms-lmstudio" },
     { name = "llama-index-vector-stores-chroma" },
-]
-
-[package.optional-dependencies]
-test = [
-    { name = "pytest" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
 ]
 
 [package.dev-dependencies]
@@ -1500,9 +1497,9 @@ requires-dist = [
     { name = "llama-index-embeddings-huggingface", specifier = ">=0.6.0" },
     { name = "llama-index-llms-lmstudio", specifier = ">=0.4.0" },
     { name = "llama-index-vector-stores-chroma", specifier = ">=0.5.0" },
-    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
 ]
-provides-extras = ["test"]
 
 [package.metadata.requires-dev]
 dev = [
