@@ -9,7 +9,7 @@ from fastmcp.client.sampling import (
 )
 
 
-llm = lmstudio.llm("openai/gpt-oss-20b")
+llm = lmstudio.llm("qwen3-0.6b")
 
 
 def input_given_type(expected_type, message_prefix: str | None = None):
@@ -72,13 +72,12 @@ async def sampling_handler(
     context: RequestContext
 ) -> str:
     logging.warning(f"Sampling handler operation with message: {messages}")
-    message = "\n\n".join(
-        [
-            f"Message {i}:\n{m.content.text}"
-            for i, m in enumerate(messages)
-        ]
-    )
+    messages = [
+        f"Message {i}:\n{m.content.text}"
+        for i, m in enumerate(messages)
+    ]
+    message = "\n\n".join(messages)
 
-    response = llm.respond(message)
+    response = llm.respond(message + " /no_think")  # /no_think for qwen3 models : https://huggingface.co/lmstudio-community/Qwen3-0.6B-GGUF
     logging.warning(f"LLM response: {response.content}")
     return response.content
