@@ -30,6 +30,20 @@ To run the server in dev mode:
 fastmcp dev src/mcp_llamaindex/server.py
 ```
 
+## Configuration
+
+The application's configuration is managed using Pydantic and environment files. The environment can be set to either `dev` or `prod`.
+
+To select an environment, set the `ENV_TYPE` environment variable:
+
+```bash
+export ENV_TYPE=prod
+```
+
+The application will then load its settings from the corresponding `.env` file (`.prod.env` in this case).
+
+**Note:** The `.env` files are not committed to version control. You should create your own `.dev.env` and `.prod.env` files based on the `.example.env` file.
+
 ## Contributing
 
 We welcome contributions to this project! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) to learn how you can contribute.

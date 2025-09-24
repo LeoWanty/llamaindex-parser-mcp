@@ -8,8 +8,9 @@ from fastmcp.client.sampling import (
     RequestContext,
 )
 
+from mcp_llamaindex.config import settings
 
-llm = lmstudio.llm("qwen3-0.6b")
+llm = lmstudio.llm(settings.summary_model)
 
 
 def input_given_type(expected_type, message_prefix: str | None = None):
