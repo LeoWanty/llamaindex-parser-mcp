@@ -42,26 +42,6 @@ export ENV_TYPE=prod
 
 The application will then load its settings from the corresponding `.env` file (`.prod.env` in this case).
 
-The following environment variables are available:
-
--   `LOG_LEVEL`: The logging level (e.g., `DEBUG`, `INFO`).
--   `DATABASE_URL`: The connection string for the database.
-
-Example `.dev.env` file:
-
-```
-LOG_LEVEL=DEBUG
-DATABASE_URL=sqlite:///./test.db
-ENV_TYPE=dev
-```
-
-Example `.prod.env` file:
-
-```
-LOG_LEVEL=INFO
-DATABASE_URL=postgresql://user:password@prod-db:5432/mydatabase
-ENV_TYPE=prod
-```
 **Note:** The `.env` files are not committed to version control. You should create your own `.dev.env` and `.prod.env` files based on the `.example.env` file.
 
 ## Contributing
