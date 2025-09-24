@@ -8,17 +8,13 @@ dependencies = [
     "chromadb>=1.0.17",
     "llama-index-vector-stores-chroma>=0.5.0",
     "llama-index-llms-lmstudio>=0.4.0",
-]
-
-[project.optional-dependencies]
-test = [
+    "pydantic",
+    "pydantic-settings",
     "pytest",
+    "pytest-asyncio",
 ]
 
-[dependency-groups]
-dev = [
-    "lmstudio>=1.5.0",
-    "pytest>=8.4.1",
-    "pytest-asyncio>=1.1.0",
-    "ruff",
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
 ]

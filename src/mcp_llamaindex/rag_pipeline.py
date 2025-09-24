@@ -23,33 +23,17 @@ from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.response_synthesizers import CompactAndRefine
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
-from mcp_llamaindex.config import STATIC_DIR
+from mcp_llamaindex.config import settings
 from mcp_llamaindex.servers.base import BaseServer
 
 logger = get_logger(__name__)
-
-# Optional: Configure local LLM (e.g., Llama 3 via Ollama)
-Settings.llm = LMStudio(
-    model_name="openai/gpt-oss-20b",
-    base_url="http://localhost:1234/v1",
-    request_timeout=120.0,  # Increased timeout for potentially longer generations
-    context_window=4096  # Important for memory management with local LLMs
-)
-
-# Configure local embedding model (e.g., BGE Large)
-Settings.embed_model = HuggingFaceEmbedding(
-    model_name="BAAI/bge-large-en-v1.5",
-)
-
-# The same embedding model must be used for both indexing and querying
-logger.debug("LLM and embedding model configured.")
 
 
 class RagConfig(BaseModel):
     """Configuration for RAG."""
     # vector_store
-    persist_dir: str | Path = STATIC_DIR / "vector_store"
-    data_dir: str | Path = STATIC_DIR / "md_documents"
+    persist_dir: str | Path = settings.STATIC_DIR / "vector_store"
+    data_dir: str | Path = settings.STATIC_DIR / "md_documents"
 
     # retrieval
     top_k: int = 3
@@ -93,8 +77,24 @@ You can ask questions about your documents, and the server will retrieve relevan
             FastMCPResource.from_function(fn=self.list_markdown_files, uri="data://list-markdown-files"),
         ]
 
+    def _initialize_models(self):
+        """Initializes the LLM and embedding models."""
+        if not hasattr(Settings, 'llm') or Settings.llm is None:
+            Settings.llm = LMStudio(
+                model_name="openai/gpt-oss-20b",
+                base_url="http://localhost:1234/v1",
+                request_timeout=120.0,
+                context_window=4096
+            )
+        if not hasattr(Settings, 'embed_model') or Settings.embed_model is None:
+            Settings.embed_model = HuggingFaceEmbedding(
+                model_name="BAAI/bge-large-en-v1.5",
+            )
+        logger.debug("LLM and embedding model configured.")
+
     def as_server(self) -> FastMCP:
         """Instantiate a FastMCP server."""
+        self._initialize_models()
         mcp: FastMCP[Any] = FastMCP[Any](
             name=self.server_name,
             instructions=self.server_instructions,
