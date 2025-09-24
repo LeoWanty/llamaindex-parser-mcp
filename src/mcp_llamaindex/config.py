@@ -1,4 +1,6 @@
 from pathlib import Path
+
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 import os
@@ -14,8 +16,10 @@ class Settings(BaseSettings):
     """
     # These settings will be loaded from the corresponding .env file.
     LOG_LEVEL: str
-    DATABASE_URL: str
     ENV_TYPE: Literal["dev", "prod"]
+
+    # LLM models
+    summary_model: str = Field(description="The LLM model name for summarizing retrieved chunks")
 
     # Paths - not from .env but defined here
     PACKAGE_ROOT: Path = Path(__file__).parent.resolve()

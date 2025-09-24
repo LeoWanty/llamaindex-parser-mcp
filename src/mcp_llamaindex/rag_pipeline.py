@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 
 # Optional: Configure local LLM (e.g., Llama 3 via Ollama)
 Settings.llm = LMStudio(
-    model_name="openai/gpt-oss-20b",
+    model_name=settings.summary_model,
     base_url="http://localhost:1234/v1",
     request_timeout=120.0,  # Increased timeout for potentially longer generations
     context_window=4096  # Important for memory management with local LLMs
