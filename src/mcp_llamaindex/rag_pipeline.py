@@ -85,6 +85,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         return [
             FastMCPTool.from_function(fn=self.query_markdown_docs),
             FastMCPTool.from_function(fn=self.query_markdown_docs_bis),
+            FastMCPTool.from_function(fn=self.get_indexed_files),
         ]
 
     def get_resources(self) -> list[FastMCPResource]:
@@ -149,6 +150,19 @@ You can ask questions about your documents, and the server will retrieve relevan
         )
         response = await ctx.sample(prompt, system_prompt=system_prompt, max_tokens=10000)
         return response.text
+
+    def get_indexed_files(self) -> list[str]:
+        """
+        Lists the names of all files that have been indexed in the RAG knowledge base.
+        """
+        if not self.index:
+            raise AttributeError("Index not found or empty. Please ensure Markdown files are present, Ollama is running, and the server started correctly.")
+
+        chroma_collection = self.index.vector_store._collection
+        metadatas = chroma_collection.get(include=["metadatas"])
+        file_paths = {m.get("file_name") for m in metadatas['metadatas']}
+        # Filter out None values in case some documents don't have a file_name
+        return sorted([fp for fp in file_paths if fp])
 
     def list_markdown_files(self) -> list[str]:
         """
