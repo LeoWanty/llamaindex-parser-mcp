@@ -23,6 +23,18 @@ python src/mcp_llamaindex/server.py
 
 The server will start and listen for requests on `stdio`.
 
+## Gradio Interface
+
+This project also includes a Gradio interface for interacting with the RAG pipeline.
+
+### Running the Gradio App
+
+To start a local web server, and access the Gradio interface in your browser:
+
+```bash
+gradio ./src/mcp_llamaindex/app.py
+```
+
 ## Dev mode
 
 To run the server in dev mode:
