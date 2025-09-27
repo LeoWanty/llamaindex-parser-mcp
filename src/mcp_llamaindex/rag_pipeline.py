@@ -151,6 +151,33 @@ You can ask questions about your documents, and the server will retrieve relevan
         response = await ctx.sample(prompt, system_prompt=system_prompt, max_tokens=10000)
         return response.text
 
+    def query_and_get_nodes(self, query: str) -> tuple[str, list[dict]]:
+        """
+        Answers questions and returns the retrieved source nodes.
+
+        Args:
+            query (str): The question to ask about the Markdown documents.
+
+        Returns:
+            tuple[str, list[dict]]: A tuple containing the generated answer
+                                     and a list of retrieved source nodes as dictionaries.
+        """
+        if self.rag_query_engine is None:
+            return "Error: RAG pipeline not initialized.", []
+
+        response = self.rag_query_engine.query(query)
+        nodes = [
+            {
+                "node": {
+                    "text": n.node.get_content(),
+                    "metadata": n.node.metadata,
+                },
+                "score": n.score,
+            }
+            for n in response.source_nodes
+        ]
+        return str(response), nodes
+
     def get_indexed_files(self) -> list[str]:
         """
         Lists the names of all files that have been indexed in the RAG knowledge base.

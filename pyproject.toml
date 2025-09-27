@@ -10,7 +10,11 @@ dependencies = [
     "llama-index-llms-lmstudio>=0.4.0",
     "pydantic",
     "pydantic-settings",
+    "gradio",
 ]
+
+[project.scripts]
+gradio-app = "mcp_llamaindex.app:main"
 
 [dependency-groups]
 dev = [
