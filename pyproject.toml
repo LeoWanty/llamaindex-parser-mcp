@@ -13,9 +13,6 @@ dependencies = [
     "gradio",
 ]
 
-[project.scripts]
-gradio-app = "mcp_llamaindex.app:main"
-
 [dependency-groups]
 dev = [
     "lmstudio>=1.5.0",
