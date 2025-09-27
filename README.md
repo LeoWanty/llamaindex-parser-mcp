@@ -29,20 +29,11 @@ This project also includes a Gradio interface for interacting with the RAG pipel
 
 ### Running the Gradio App
 
-To run the Gradio app, follow these steps:
+To start a local web server, and access the Gradio interface in your browser:
 
-1. **Install the dependencies:**
-   ```bash
-   uv sync
-   pip install -e .
-   ```
-
-2. **Launch the app:**
-   ```bash
-   gradio-app
-   ```
-
-This will start a local web server, and you can access the interface by navigating to the provided URL in your browser.
+```bash
+gradio-app
+```
 
 ## Dev mode
 
