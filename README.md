@@ -32,7 +32,7 @@ This project also includes a Gradio interface for interacting with the RAG pipel
 To start a local web server, and access the Gradio interface in your browser:
 
 ```bash
-gradio-app
+gradio ./src/mcp_llamaindex/app.py
 ```
 
 ## Dev mode
