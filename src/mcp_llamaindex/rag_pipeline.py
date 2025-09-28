@@ -239,15 +239,23 @@ You can ask questions about your documents, and the server will retrieve relevan
             index = load_index_from_storage(storage_context=storage_context)
             logger.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
         except Exception as e:  # TODO : Catching a broad exception for demonstration, be more specific in production
-            logger.warning(f"Could not load existing index ({e}). Creating a new LlamaIndex...")
-            storage_context = StorageContext.from_defaults(vector_store=vector_store)
-            index = VectorStoreIndex.from_documents(
-                self.documents,
-                storage_context=storage_context,
-            )
-            # Persist the newly created index
+            logger.warning(f"Could not load existing index ({e})...")
+            if chroma_collection.count() > 0:
+                logger.warning("Vector store is not empty. Reconstructing index from existing vector store.")
+                index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
+                logger.debug("Reconstructed index from vector store.")
+            else:
+                logger.warning("Vector store is empty. Creating a new LlamaIndex...")
+                storage_context = StorageContext.from_defaults(vector_store=vector_store)
+                index = VectorStoreIndex.from_documents(
+                    self.documents,
+                    storage_context=storage_context,
+                )
+                logger.debug("New LlamaIndex created.")
+
+            # Persist the newly created/reconstructed index
             index.storage_context.persist(persist_dir=persist_dir)
-            logger.debug("New LlamaIndex created and persisted to disk.")
+            logger.debug("Index persisted to disk.")
 
         return index
 
