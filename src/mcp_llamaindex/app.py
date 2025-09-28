@@ -45,7 +45,10 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                 )
 
         with gr.Column(scale=3):
-            chatbot = gr.Chatbot()
+            chatbot = gr.Chatbot(
+                label="RAG Chatbot",
+                type="messages"
+            )
             msg = gr.Textbox(label="Ask a question about your documents")
 
             with gr.Accordion("Retrieved Elements", open=False):
@@ -54,7 +57,8 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
             def respond(message, chat_history):
                 bot_answer, nodes = rag_server.query_and_get_nodes(message)
                 nb_nodes = f"Nombre de noeuds récupérés: {len(nodes)}"
-                chat_history.append((message, bot_answer))
+                chat_history.append({"role": "user", "content": message})
+                chat_history.append({"role": "assistant", "content": bot_answer})
                 formatted_nodes = format_retrieved_nodes(nodes)
                 return "", chat_history, f"{nb_nodes}\n\n{formatted_nodes}"
 

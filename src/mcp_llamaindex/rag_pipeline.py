@@ -211,7 +211,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         if not p.exists():
             raise FileNotFoundError(f"Data directory '{data_dir}' not found. Please create it and add Markdown files.")
 
-        reader = SimpleDirectoryReader(input_dir=data_dir)
+        reader = SimpleDirectoryReader(input_dir=data_dir, required_exts=[".md"])
         documents = reader.load_data()
 
         logger.debug(f"Loaded {len(documents)} documents from '{data_dir}'.")
