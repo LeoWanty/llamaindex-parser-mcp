@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+import shutil
 from typing import Any
 
 from fastmcp import FastMCP, Context
@@ -200,6 +201,39 @@ You can ask questions about your documents, and the server will retrieve relevan
 
         markdown_files = [str(f.name) for f in self.rag_config.data_dir.iterdir() if f.is_file() and f.suffix == ".md"]
         return markdown_files
+
+    def add_markdown_file(self, temp_file_path: str) -> str:
+        """
+        Adds a new Markdown file to the data directory and updates the index.
+        """
+        try:
+            temp_file = Path(temp_file_path)
+            file_name = temp_file.name
+            destination_path = self.rag_config.data_dir / file_name
+
+            # Verify the name of the text is not already stored
+            if file_name in self.list_markdown_files():
+                return f"Error: File '{file_name}' already exists."
+
+            # It should be saved in the relevant static dir
+            shutil.copy(str(temp_file), str(destination_path))
+
+            # Load the new document
+            new_document = SimpleDirectoryReader(input_files=[destination_path]).load_data()
+
+            # It should update the persistent vector_store content
+            self.index.insert_nodes(new_document)
+            self.index.storage_context.persist(persist_dir=str(self.rag_config.persist_dir))
+
+            # The list of files in the list is updated once the loading is done
+            self.list_markdown_files.cache_clear()
+            self.get_indexed_files.cache_clear()
+            self._get_or_create_index.cache_clear()
+
+            return f"Successfully added and indexed '{file_name}'."
+        except Exception as e:
+            logger.error(f"Failed to add markdown file: {e}")
+            return f"Error: Failed to add file. See logs for details."
 
     @staticmethod
     @lru_cache(maxsize=1)
