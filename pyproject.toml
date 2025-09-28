@@ -13,7 +13,7 @@ dependencies = [
     "gradio",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "lmstudio>=1.5.0",
     "pytest>=8.4.1",
