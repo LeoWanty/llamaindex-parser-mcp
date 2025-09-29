@@ -23,13 +23,6 @@ def format_retrieved_nodes(nodes: list[dict]) -> str:
 
     return "\n\n".join(formatted_nodes)
 
-
-def get_available_resources():
-    """
-    Gets the list of available resources from the RAG server.
-    """
-    return rag_server.list_markdown_files()
-
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# RAG Pipeline Explorer")
 
@@ -37,9 +30,9 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
         with gr.Column(scale=1):
             with gr.Accordion("Available Resources"):
                 resource_checklist = gr.CheckboxGroup(
-                    choices=get_available_resources(),
+                    choices=rag_server.list_markdown_files(),
                     label="Select resources to include in the RAG pipeline",
-                    value=get_available_resources()  # by default, all are selected
+                    value=rag_server.list_markdown_files()  # by default, all are selected
                 )
 
             with gr.Accordion("Add New Resource", open=True):
@@ -55,7 +48,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                         return "No file uploaded.", gr.update()
 
                     status_message = rag_server.add_markdown_file(temp_file.name)
-                    updated_choices = get_available_resources()
+                    updated_choices = rag_server.list_markdown_files()
                     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
                 file_uploader.upload(
