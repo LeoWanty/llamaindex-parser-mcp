@@ -1,5 +1,4 @@
 import gradio as gr
-from pathlib import Path
 from mcp_llamaindex.rag_pipeline import DirectoryRagServer
 
 # Initialize the RAG server
@@ -58,10 +57,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                         return "No file uploaded.", gr.update()
 
                     status_message = rag_server.add_markdown_file(temp_file.name)
-
-                    # Refresh the checklist
                     updated_choices = get_available_resources()
-
                     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
                 file_uploader.upload(
