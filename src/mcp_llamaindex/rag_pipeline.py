@@ -277,11 +277,12 @@ You can ask questions about your documents, and the server will retrieve relevan
             shutil.copy(str(file_path), str(destination_path))
 
             # Load and insert into index
-            new_document = SimpleDirectoryReader(
-                input_files=[destination_path]
+            new_documents = SimpleDirectoryReader(
+                input_files=[destination_path], required_exts=[".md"]
             ).load_data()
-            self.index.insert_nodes(new_document)
-            # self.index.storage_context.persist(persist_dir=str(self.rag_config.persist_dir))
+            for document in new_documents:
+                self.index.insert(document)
+
         except Exception as e:
             logger.error(f"Failed to add markdown file: {e}")
             raise e
