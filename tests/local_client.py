@@ -45,11 +45,12 @@ def input_given_properties(properties: dict):
         for prop_name, prop in properties.items()
     }
 
+
 async def elicitation_handler(
-        message: str,
-        response_type: type,
-        params,
-        context,
+    message: str,
+    response_type: type,
+    params,
+    context,
 ):
     logging.warning(f"Elicitation handler called with message: {message}")
     # Present the message to the user and collect input
@@ -59,7 +60,6 @@ async def elicitation_handler(
         properties = response_type.__dict__["__annotations__"]
         user_input = input_given_properties(properties)
 
-
     # Create response using the provided dataclass type
     if response_type is None:
         return None
@@ -68,17 +68,14 @@ async def elicitation_handler(
 
 
 async def sampling_handler(
-    messages: list[SamplingMessage],
-    params: SamplingParams,
-    context: RequestContext
+    messages: list[SamplingMessage], params: SamplingParams, context: RequestContext
 ) -> str:
     logging.warning(f"Sampling handler operation with message: {messages}")
-    messages = [
-        f"Message {i}:\n{m.content.text}"
-        for i, m in enumerate(messages)
-    ]
+    messages = [f"Message {i}:\n{m.content.text}" for i, m in enumerate(messages)]
     message = "\n\n".join(messages)
 
-    response = llm.respond(message + " /no_think")  # /no_think for qwen3 models : https://huggingface.co/lmstudio-community/Qwen3-0.6B-GGUF
+    response = llm.respond(
+        message + " /no_think"
+    )  # /no_think for qwen3 models : https://huggingface.co/lmstudio-community/Qwen3-0.6B-GGUF
     logging.warning(f"LLM response: {response.content}")
     return response.content

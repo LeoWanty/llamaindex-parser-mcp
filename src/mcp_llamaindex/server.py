@@ -8,6 +8,7 @@ from llama_index.core.node_parser import MarkdownNodeParser
 # Initialize FastMCP server
 mcp = FastMCP("llamaindex_loader")
 
+
 @mcp.tool()
 async def load_markdown_data(path: str | Path | list[str] | list[Path]) -> str:
     """
@@ -38,5 +39,6 @@ async def load_markdown_data(path: str | Path | list[str] | list[Path]) -> str:
     except Exception as e:
         return f"Error loading and parsing data: {e}"
 
+
 if __name__ == "__main__":
-    mcp.run(transport='stdio')
+    mcp.run(transport="stdio")

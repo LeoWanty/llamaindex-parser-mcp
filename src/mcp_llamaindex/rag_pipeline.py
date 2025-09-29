@@ -21,6 +21,11 @@ from llama_index.core import (
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.response_synthesizers import CompactAndRefine
+from llama_index.core.vector_stores import (
+    MetadataFilters,
+    MetadataFilter,
+    FilterCondition,
+)
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from mcp_llamaindex.config import settings
@@ -33,7 +38,7 @@ Settings.llm = LMStudio(
     model_name=settings.summary_model,
     base_url="http://localhost:1234/v1",
     request_timeout=120.0,  # Increased timeout for potentially longer generations
-    context_window=4096  # Important for memory management with local LLMs
+    context_window=4096,  # Important for memory management with local LLMs
 )
 
 # Configure local embedding model (e.g., BGE Large)
@@ -47,6 +52,7 @@ logger.debug("LLM and embedding model configured.")
 
 class RagConfig(BaseModel):
     """Configuration for RAG."""
+
     # vector_store
     persist_dir: str | Path = settings.STATIC_DIR / "vector_store"
     data_dir: str | Path = settings.STATIC_DIR / "md_documents"
@@ -57,13 +63,19 @@ class RagConfig(BaseModel):
 
 class DirectoryRagServer(BaseServer):
     """A server for RAG."""
+
     # FastMCP server
     server_name: str = "Directory Rag Server"
     server_instructions: str = """
 This server provides Retrieval-Augmented Generation (RAG) capabilities over your local Markdown documentation.
 You can ask questions about your documents, and the server will retrieve relevant information and generate an answer.
 """
-    server_dependencies: list[str] = ["llama-index", "llama-index-llms-ollama", "llama-index-vector-stores-chroma", "chromadb"]
+    server_dependencies: list[str] = [
+        "llama-index",
+        "llama-index-llms-ollama",
+        "llama-index-vector-stores-chroma",
+        "chromadb",
+    ]
 
     # RAG pipeline
     rag_config: RagConfig = Field(default_factory=RagConfig)
@@ -91,7 +103,9 @@ You can ask questions about your documents, and the server will retrieve relevan
     def get_resources(self) -> list[FastMCPResource]:
         """Get the resources for the server."""
         return [
-            FastMCPResource.from_function(fn=self.list_markdown_files, uri="data://list-markdown-files"),
+            FastMCPResource.from_function(
+                fn=self.list_markdown_files, uri="data://list-markdown-files"
+            ),
         ]
 
     def as_server(self) -> FastMCP:
@@ -144,28 +158,66 @@ You can ask questions about your documents, and the server will retrieve relevan
 
         retrieved_docs = self.rag_query_engine.retrieve(query)
         question_prompt = f"Query: {query}"
-        system_prompt = "You're an assistant that summarizes documents to answer a user query."
-        prompt = "\n\n___\n\n".join(
-            [question_prompt] + [f"Document {i}:\n"+ node.get_content() for i, node in enumerate(retrieved_docs)]
+        system_prompt = (
+            "You're an assistant that summarizes documents to answer a user query."
         )
-        response = await ctx.sample(prompt, system_prompt=system_prompt, max_tokens=10000)
+        prompt = "\n\n___\n\n".join(
+            [question_prompt]
+            + [
+                f"Document {i}:\n" + node.get_content()
+                for i, node in enumerate(retrieved_docs)
+            ]
+        )
+        response = await ctx.sample(
+            prompt, system_prompt=system_prompt, max_tokens=10000
+        )
         return response.text
 
-    def query_and_get_nodes(self, query: str) -> tuple[str, list[dict]]:
+    def query_and_get_nodes(
+        self, query: str, allowed_files: list[str] | None = None
+    ) -> tuple[str, list[dict]]:
         """
         Answers questions and returns the retrieved source nodes.
 
         Args:
             query (str): The question to ask about the Markdown documents.
+            allowed_files (list[str] | None): A list of allowed file names to filter the search.
+                                              If None, all files are considered.
 
         Returns:
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
+        if not allowed_files:
+            return (
+                "No resources selected. Please select at least one resource to query.",
+                [],
+            )
+
         if self.rag_query_engine is None:
             return "Error: RAG pipeline not initialized.", []
 
-        response = self.rag_query_engine.query(query)
+        # Filters for the retriever
+        filters = MetadataFilters(
+            filters=[
+                MetadataFilter(key="file_name", value=file) for file in allowed_files
+            ],
+            condition=FilterCondition.OR,
+        )
+
+        # Create a new retriever with the filters
+        retriever = VectorIndexRetriever(
+            index=self.index, similarity_top_k=self.rag_config.top_k, filters=filters
+        )
+
+        # Retrieve nodes using the new retriever
+        retrieved_nodes = retriever.retrieve(query)
+
+        # Synthesize the response from the retrieved nodes
+        response_synthesizer = CompactAndRefine()
+        response = response_synthesizer.synthesize(query, nodes=retrieved_nodes)
+
+        # Format nodes for display
         nodes = [
             {
                 "node": {
@@ -174,7 +226,7 @@ You can ask questions about your documents, and the server will retrieve relevan
                 },
                 "score": n.score,
             }
-            for n in response.source_nodes
+            for n in retrieved_nodes
         ]
         return str(response), nodes
 
@@ -183,11 +235,13 @@ You can ask questions about your documents, and the server will retrieve relevan
         Lists the names of all files that have been indexed in the RAG knowledge base.
         """
         if not self.index:
-            raise AttributeError("Index not found or empty. Please ensure Markdown files are present, Ollama is running, and the server started correctly.")
+            raise AttributeError(
+                "Index not found or empty. Please ensure Markdown files are present, Ollama is running, and the server started correctly."
+            )
 
         chroma_collection = self.index.vector_store._collection
         metadatas = chroma_collection.get(include=["metadatas"])
-        file_paths = {m.get("file_name") for m in metadatas['metadatas']}
+        file_paths = {m.get("file_name") for m in metadatas["metadatas"]}
         # Filter out None values in case some documents don't have a file_name
         return sorted([fp for fp in file_paths if fp])
 
@@ -198,7 +252,11 @@ You can ask questions about your documents, and the server will retrieve relevan
         if not self.rag_config.data_dir.exists():
             return ["No directory found."]
 
-        markdown_files = [str(f.name) for f in self.rag_config.data_dir.iterdir() if f.is_file() and f.suffix == ".md"]
+        markdown_files = [
+            str(f.name)
+            for f in self.rag_config.data_dir.iterdir()
+            if f.is_file() and f.suffix == ".md"
+        ]
         return markdown_files
 
     @staticmethod
@@ -209,7 +267,9 @@ You can ask questions about your documents, and the server will retrieve relevan
         """
         p = Path(data_dir)
         if not p.exists():
-            raise FileNotFoundError(f"Data directory '{data_dir}' not found. Please create it and add Markdown files.")
+            raise FileNotFoundError(
+                f"Data directory '{data_dir}' not found. Please create it and add Markdown files."
+            )
 
         reader = SimpleDirectoryReader(input_dir=data_dir, required_exts=[".md"])
         documents = reader.load_data()
@@ -235,18 +295,24 @@ You can ask questions about your documents, and the server will retrieve relevan
         try:
             # Attempt to load an existing index from storage context
             # Note: For ChromaDB, `load_index_from_storage` needs the vector_store in storage_context
-            storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir=str(persist_dir))
+            storage_context = StorageContext.from_defaults(
+                vector_store=vector_store, persist_dir=str(persist_dir)
+            )
             index = load_index_from_storage(storage_context=storage_context)
             logger.debug("Loaded existing LlamaIndex from disk using ChromaDB.")
         except Exception as e:  # TODO : Catching a broad exception for demonstration, be more specific in production
             logger.warning(f"Could not load existing index ({e})...")
             if chroma_collection.count() > 0:
-                logger.warning("Vector store is not empty. Reconstructing index from existing vector store.")
+                logger.warning(
+                    "Vector store is not empty. Reconstructing index from existing vector store."
+                )
                 index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
                 logger.debug("Reconstructed index from vector store.")
             else:
                 logger.warning("Vector store is empty. Creating a new LlamaIndex...")
-                storage_context = StorageContext.from_defaults(vector_store=vector_store)
+                storage_context = StorageContext.from_defaults(
+                    vector_store=vector_store
+                )
                 index = VectorStoreIndex.from_documents(
                     self.documents,
                     storage_context=storage_context,
@@ -261,7 +327,9 @@ You can ask questions about your documents, and the server will retrieve relevan
 
     @staticmethod
     @lru_cache(maxsize=1)
-    def _instantiate_rag_query_engine(index: VectorStoreIndex, top_k: int = 3) -> RetrieverQueryEngine:
+    def _instantiate_rag_query_engine(
+        index: VectorStoreIndex, top_k: int = 3
+    ) -> RetrieverQueryEngine:
         """
         Creates and returns a LlamaIndex query engine for RAG.
         """
@@ -269,8 +337,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         response_synthesizer = CompactAndRefine()
 
         query_engine = RetrieverQueryEngine(
-            retriever=retriever,
-            response_synthesizer=response_synthesizer
+            retriever=retriever, response_synthesizer=response_synthesizer
         )
         logger.debug("LlamaIndex query engine created.")
         return query_engine

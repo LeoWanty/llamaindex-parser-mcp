@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 class BaseServer(BaseModel, ABC):
     """A base server for all servers."""
+
     server_name: str
 
     model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
