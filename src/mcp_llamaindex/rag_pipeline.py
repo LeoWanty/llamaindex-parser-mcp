@@ -258,21 +258,30 @@ You can ask questions about your documents, and the server will retrieve relevan
         ]
         return markdown_files
 
-    def add_markdown_file(self, file_path: str | Path) -> None:
+    def add_markdown_file(self, file_path: str | Path) -> str:
         """
         Adds a new Markdown file to the data directory and updates the index.
 
         Args:
-            file_path (str): The path to the file.
+            file_path (str | Path): The path to the file.
+
+        Returns:
+            str: A status message indicating success or failure.
         """
+        if file_path is None:
+            return "No file provided."
+
         file_path = Path(file_path)
         file_name = file_path.name
         destination_path = self.rag_config.data_dir / file_name
 
-        if file_name in self.list_markdown_files():
-            raise ValueError(f"File '{file_name}' already exists.")
+        if destination_path.exists():
+            return f"File '{file_name}' already exists and will not be added again."
 
         try:
+            # Ensure the data directory exists
+            self.rag_config.data_dir.mkdir(parents=True, exist_ok=True)
+
             # Save in the relevant static dir
             shutil.copy(str(file_path), str(destination_path))
 
@@ -283,9 +292,73 @@ You can ask questions about your documents, and the server will retrieve relevan
             for document in new_documents:
                 self.index.insert(document)
 
+            logger.info(f"Successfully added and indexed '{file_name}'.")
+            return f"Successfully added and indexed '{file_name}'."
+
         except Exception as e:
-            logger.error(f"Failed to add markdown file: {e}")
-            raise e
+            logger.error(f"Failed to add markdown file '{file_name}': {e}")
+            # Clean up if the file was copied but indexing failed
+            if destination_path.exists():
+                destination_path.unlink()
+            return f"Error adding file '{file_name}': {e}"
+
+    def delete_markdown_files(self, file_names: list[str]) -> str:
+        """
+        Deletes specified Markdown files from the data directory and the index.
+
+        Args:
+            file_names (list[str]): A list of file names to delete.
+
+        Returns:
+            str: A status message summarizing the outcome.
+        """
+        if not file_names:
+            return "No files selected for deletion."
+
+        deleted_count = 0
+        failed_files = []
+
+        for file_name in file_names:
+            try:
+                destination_path = self.rag_config.data_dir / file_name
+                if not destination_path.exists():
+                    logger.warning(
+                        f"File '{file_name}' not found in data directory. "
+                        "Attempting to remove from index anyway."
+                    )
+
+                # The ref_doc_id used by LlamaIndex is the resolved absolute path of the file
+                ref_doc_id = str(destination_path.resolve())
+
+                # This deletes from vector store, index struct, and docstore
+                self.index.delete_ref_doc(ref_doc_id, delete_from_docstore=True)
+
+                # Finally, delete the physical file if it exists
+                if destination_path.exists():
+                    destination_path.unlink()
+
+                deleted_count += 1
+                logger.info(
+                    f"Successfully deleted file and index entries for '{file_name}'."
+                )
+
+            except Exception as e:
+                # Catching broad exception because LlamaIndex might raise various errors
+                # if the doc is not found in the docstore, etc.
+                logger.error(f"Failed to delete '{file_name}': {e}")
+                failed_files.append(file_name)
+
+        # Constructing the status message
+        status_parts = []
+        if deleted_count > 0:
+            status_parts.append(f"Successfully deleted {deleted_count} file(s).")
+        if failed_files:
+            status_parts.append(f"Failed to delete: {', '.join(failed_files)}.")
+
+        if not status_parts:
+            return "No action taken. Files may not have been found or indexed."
+
+        return " ".join(status_parts)
 
     @staticmethod
     @lru_cache(maxsize=1)
