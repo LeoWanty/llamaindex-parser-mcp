@@ -33,8 +33,6 @@ def get_available_resources():
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# RAG Pipeline Explorer")
 
-    retrieved_nodes_state = gr.State([])
-
     with gr.Row():
         with gr.Column(scale=1):
             with gr.Accordion("Available Resources"):
