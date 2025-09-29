@@ -11,6 +11,7 @@ client = Client(
     sampling_handler=sampling_handler,
 )
 
+
 async def main():
     async with client:
         # Basic server interaction
@@ -24,7 +25,8 @@ async def main():
         logging.warning(resources)
         logging.warning(prompts)
 
-
-        sampling_result = await client.call_tool("query_markdown_docs_bis", {"query": "What is ReACT"})
+        sampling_result = await client.call_tool(
+            "query_markdown_docs_bis", {"query": "What is ReACT"}
+        )
         logging.warning(sampling_result)
         return sampling_result
