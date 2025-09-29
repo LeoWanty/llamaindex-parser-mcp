@@ -189,7 +189,7 @@ You can ask questions about your documents, and the server will retrieve relevan
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
-        if not allowed_files and allowed_files is not None :
+        if not allowed_files and allowed_files is not None:
             return (
                 "No resources selected. Please select at least one resource to query.",
                 [],
@@ -203,7 +203,8 @@ You can ask questions about your documents, and the server will retrieve relevan
         if allowed_files:
             filters = MetadataFilters(
                 filters=[
-                    MetadataFilter(key="file_name", value=file) for file in allowed_files
+                    MetadataFilter(key="file_name", value=file)
+                    for file in allowed_files
                 ],
                 condition=FilterCondition.OR,
             )
@@ -214,7 +215,6 @@ You can ask questions about your documents, and the server will retrieve relevan
                 self.rag_query_engine.retriever._filters = previous_filter
         else:
             response = self.rag_query_engine.query(query)
-
 
         # Format nodes for display
         nodes = [
@@ -277,11 +277,12 @@ You can ask questions about your documents, and the server will retrieve relevan
             shutil.copy(str(file_path), str(destination_path))
 
             # Load and insert into index
-            new_document = SimpleDirectoryReader(
-                input_files=[destination_path]
+            new_documents = SimpleDirectoryReader(
+                input_files=[destination_path], required_exts=[".md"]
             ).load_data()
-            self.index.insert_nodes(new_document)
-            # self.index.storage_context.persist(persist_dir=str(self.rag_config.persist_dir))
+            for document in new_documents:
+                self.index.insert(document)
+
         except Exception as e:
             logger.error(f"Failed to add markdown file: {e}")
             raise e
