@@ -189,7 +189,7 @@ You can ask questions about your documents, and the server will retrieve relevan
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
-        if not allowed_files and allowed_files is not None :
+        if not allowed_files and allowed_files is not None:
             return (
                 "No resources selected. Please select at least one resource to query.",
                 [],
@@ -203,7 +203,8 @@ You can ask questions about your documents, and the server will retrieve relevan
         if allowed_files:
             filters = MetadataFilters(
                 filters=[
-                    MetadataFilter(key="file_name", value=file) for file in allowed_files
+                    MetadataFilter(key="file_name", value=file)
+                    for file in allowed_files
                 ],
                 condition=FilterCondition.OR,
             )
@@ -214,7 +215,6 @@ You can ask questions about your documents, and the server will retrieve relevan
                 self.rag_query_engine.retriever._filters = previous_filter
         else:
             response = self.rag_query_engine.query(query)
-
 
         # Format nodes for display
         nodes = [
