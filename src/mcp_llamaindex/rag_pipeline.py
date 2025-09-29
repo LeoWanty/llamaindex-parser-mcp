@@ -22,6 +22,11 @@ from llama_index.core import (
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.response_synthesizers import CompactAndRefine
+from llama_index.core.vector_stores import (
+    MetadataFilters,
+    MetadataFilter,
+    FilterCondition,
+)
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from mcp_llamaindex.config import settings
@@ -169,21 +174,49 @@ You can ask questions about your documents, and the server will retrieve relevan
         )
         return response.text
 
-    def query_and_get_nodes(self, query: str) -> tuple[str, list[dict]]:
+    def query_and_get_nodes(
+        self, query: str, allowed_files: list[str] | None = None
+    ) -> tuple[str, list[dict]]:
         """
         Answers questions and returns the retrieved source nodes.
 
         Args:
             query (str): The question to ask about the Markdown documents.
+            allowed_files (list[str] | None): A list of allowed file names to filter the search.
+                                              If None, all files are considered.
 
         Returns:
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
+        if not allowed_files and allowed_files is not None :
+            return (
+                "No resources selected. Please select at least one resource to query.",
+                [],
+            )
+
         if self.rag_query_engine is None:
             return "Error: RAG pipeline not initialized.", []
 
-        response = self.rag_query_engine.query(query)
+        # Update filters from the retriever (if needed)
+        previous_filter = self.rag_query_engine.retriever._filters
+        if allowed_files:
+            filters = MetadataFilters(
+                filters=[
+                    MetadataFilter(key="file_name", value=file) for file in allowed_files
+                ],
+                condition=FilterCondition.OR,
+            )
+            try:
+                self.rag_query_engine.retriever._filters = filters
+                response = self.rag_query_engine.query(query)
+            finally:
+                self.rag_query_engine.retriever._filters = previous_filter
+        else:
+            response = self.rag_query_engine.query(query)
+
+
+        # Format nodes for display
         nodes = [
             {
                 "node": {

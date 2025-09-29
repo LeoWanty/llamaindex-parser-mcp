@@ -32,6 +32,10 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     with gr.Row():
         with gr.Column(scale=1):
             with gr.Accordion("Available Resources"):
+                with gr.Row():
+                    check_all_btn = gr.Button("Check All")
+                    uncheck_all_btn = gr.Button("Uncheck All")
+
                 resource_checklist = gr.CheckboxGroup(
                     choices=rag_server.list_markdown_files(),
                     label="Select resources to include in the RAG pipeline",
@@ -69,15 +73,39 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                     "Retrieved nodes will be displayed here."
                 )
 
-            def respond(message, chat_history):
-                bot_answer, nodes = rag_server.query_and_get_nodes(message)
+            def respond(message, chat_history, selected_resources):
+                if not selected_resources:
+                    gr.Warning(
+                        "No resources selected. Please select at least one resource to query."
+                    )
+                    bot_answer, nodes = (
+                        "No resources selected. Please select at least one resource to query.",
+                        [],
+                    )
+                else:
+                    bot_answer, nodes = rag_server.query_and_get_nodes(
+                        message, allowed_files=selected_resources
+                    )
+
                 nb_nodes = f"Nombre de noeuds récupérés: {len(nodes)}"
                 chat_history.append({"role": "user", "content": message})
                 chat_history.append({"role": "assistant", "content": bot_answer})
                 formatted_nodes = format_retrieved_nodes(nodes)
                 return "", chat_history, f"{nb_nodes}\n\n{formatted_nodes}"
 
-            msg.submit(respond, [msg, chatbot], [msg, chatbot, retrieved_nodes_display])
+            def check_all():
+                return gr.update(value=rag_server.list_markdown_files())
+
+            def uncheck_all():
+                return gr.update(value=[])
+
+            msg.submit(
+                respond,
+                [msg, chatbot, resource_checklist],
+                [msg, chatbot, retrieved_nodes_display],
+            )
+            check_all_btn.click(check_all, [], resource_checklist)
+            uncheck_all_btn.click(uncheck_all, [], resource_checklist)
 
 
 def main():
