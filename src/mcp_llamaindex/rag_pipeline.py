@@ -189,7 +189,7 @@ You can ask questions about your documents, and the server will retrieve relevan
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
-        if not allowed_files:
+        if not allowed_files and allowed_files is not None :
             return (
                 "No resources selected. Please select at least one resource to query.",
                 [],
@@ -198,25 +198,23 @@ You can ask questions about your documents, and the server will retrieve relevan
         if self.rag_query_engine is None:
             return "Error: RAG pipeline not initialized.", []
 
-        # Filters for the retriever
-        filters = MetadataFilters(
-            filters=[
-                MetadataFilter(key="file_name", value=file) for file in allowed_files
-            ],
-            condition=FilterCondition.OR,
-        )
+        # Update filters from the retriever (if needed)
+        previous_filter = self.rag_query_engine.retriever._filters
+        if allowed_files:
+            filters = MetadataFilters(
+                filters=[
+                    MetadataFilter(key="file_name", value=file) for file in allowed_files
+                ],
+                condition=FilterCondition.OR,
+            )
+            try:
+                self.rag_query_engine.retriever._filters = filters
+                response = self.rag_query_engine.query(query)
+            finally:
+                self.rag_query_engine.retriever._filters = previous_filter
+        else:
+            response = self.rag_query_engine.query(query)
 
-        # Create a new retriever with the filters
-        retriever = VectorIndexRetriever(
-            index=self.index, similarity_top_k=self.rag_config.top_k, filters=filters
-        )
-
-        # Retrieve nodes using the new retriever
-        retrieved_nodes = retriever.retrieve(query)
-
-        # Synthesize the response from the retrieved nodes
-        response_synthesizer = CompactAndRefine()
-        response = response_synthesizer.synthesize(query, nodes=retrieved_nodes)
 
         # Format nodes for display
         nodes = [
@@ -227,7 +225,7 @@ You can ask questions about your documents, and the server will retrieve relevan
                 },
                 "score": n.score,
             }
-            for n in retrieved_nodes
+            for n in response.source_nodes
         ]
         return str(response), nodes
 
