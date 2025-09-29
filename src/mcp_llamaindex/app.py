@@ -26,6 +26,44 @@ def format_retrieved_nodes(nodes: list[dict]) -> str:
     return "\n\n".join(formatted_nodes)
 
 
+def respond(message, chat_history, selected_resources):
+    if not selected_resources:
+        gr.Warning(
+            "No resources selected. Please select at least one resource to query."
+        )
+        bot_answer, nodes = (
+            "No resources selected. Please select at least one resource to query.",
+            [],
+        )
+    else:
+        bot_answer, nodes = rag_server.query_and_get_nodes(
+            message, allowed_files=selected_resources
+        )
+
+    nb_nodes = f"Nombre de noeuds récupérés: {len(nodes)}"
+    chat_history.append({"role": "user", "content": message})
+    chat_history.append({"role": "assistant", "content": bot_answer})
+    formatted_nodes = format_retrieved_nodes(nodes)
+    return "", chat_history, f"{nb_nodes}\n\n{formatted_nodes}"
+
+
+def upload_file_handler(temp_file):
+    if temp_file is None:
+        return "No file uploaded.", gr.update()
+
+    status_message = rag_server.add_markdown_file(temp_file.name)
+    updated_choices = rag_server.list_markdown_files()
+    return status_message, gr.update(choices=updated_choices, value=updated_choices)
+
+
+def check_all():
+    return gr.update(value=rag_server.list_markdown_files())
+
+
+def uncheck_all():
+    return gr.update(value=[])
+
+
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# RAG Pipeline Explorer")
 
@@ -39,7 +77,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                 resource_checklist = gr.CheckboxGroup(
                     choices=rag_server.list_markdown_files(),
                     label="Select resources to include in the RAG pipeline",
-                    value=rag_server.list_markdown_files(),  # by default, all are selected
+                    value=rag_server.list_markdown_files(),
                 )
 
             with gr.Accordion("Add New Resource", open=True):
@@ -47,17 +85,6 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                     label="Upload a Markdown File", file_types=[".md"], type="filepath"
                 )
                 upload_status = gr.Markdown()
-
-                def upload_file_handler(temp_file):
-                    if temp_file is None:
-                        return "No file uploaded.", gr.update()
-
-                    status_message = rag_server.add_markdown_file(temp_file.name)
-                    updated_choices = rag_server.list_markdown_files()
-                    return status_message, gr.update(
-                        choices=updated_choices, value=updated_choices
-                    )
-
                 file_uploader.upload(
                     upload_file_handler,
                     inputs=[file_uploader],
@@ -72,32 +99,6 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                 retrieved_nodes_display = gr.Markdown(
                     "Retrieved nodes will be displayed here."
                 )
-
-            def respond(message, chat_history, selected_resources):
-                if not selected_resources:
-                    gr.Warning(
-                        "No resources selected. Please select at least one resource to query."
-                    )
-                    bot_answer, nodes = (
-                        "No resources selected. Please select at least one resource to query.",
-                        [],
-                    )
-                else:
-                    bot_answer, nodes = rag_server.query_and_get_nodes(
-                        message, allowed_files=selected_resources
-                    )
-
-                nb_nodes = f"Nombre de noeuds récupérés: {len(nodes)}"
-                chat_history.append({"role": "user", "content": message})
-                chat_history.append({"role": "assistant", "content": bot_answer})
-                formatted_nodes = format_retrieved_nodes(nodes)
-                return "", chat_history, f"{nb_nodes}\n\n{formatted_nodes}"
-
-            def check_all():
-                return gr.update(value=rag_server.list_markdown_files())
-
-            def uncheck_all():
-                return gr.update(value=[])
 
             msg.submit(
                 respond,
