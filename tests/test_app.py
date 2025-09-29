@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from mcp_llamaindex.app import format_retrieved_nodes, get_available_resources, respond
+from mcp_llamaindex.app import format_retrieved_nodes, respond
 
 
 def test_format_retrieved_nodes_empty():
@@ -41,15 +41,6 @@ def test_format_retrieved_nodes_missing_keys():
     assert "**File:** `N/A`" in formatted_output
     assert "Node score: N/A" in formatted_output
     assert "Content without score or file name." in formatted_output
-
-
-@patch("mcp_llamaindex.app.rag_server")
-def test_get_available_resources(mock_rag_server):
-    """Test getting available resources from the RAG server."""
-    mock_rag_server.list_markdown_files.return_value = ["doc1.md", "doc2.md"]
-    resources = get_available_resources()
-    assert resources == ["doc1.md", "doc2.md"]
-    mock_rag_server.list_markdown_files.assert_called_once()
 
 
 @patch("mcp_llamaindex.app.rag_server")
