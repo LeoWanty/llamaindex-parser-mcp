@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+import shutil
 from typing import Any
 
 from fastmcp import FastMCP, Context
@@ -223,6 +224,34 @@ You can ask questions about your documents, and the server will retrieve relevan
             if f.is_file() and f.suffix == ".md"
         ]
         return markdown_files
+
+    def add_markdown_file(self, file_path: str | Path) -> None:
+        """
+        Adds a new Markdown file to the data directory and updates the index.
+
+        Args:
+            file_path (str): The path to the file.
+        """
+        file_path = Path(file_path)
+        file_name = file_path.name
+        destination_path = self.rag_config.data_dir / file_name
+
+        if file_name in self.list_markdown_files():
+            raise ValueError(f"File '{file_name}' already exists.")
+
+        try:
+            # Save in the relevant static dir
+            shutil.copy(str(file_path), str(destination_path))
+
+            # Load and insert into index
+            new_document = SimpleDirectoryReader(
+                input_files=[destination_path]
+            ).load_data()
+            self.index.insert_nodes(new_document)
+            # self.index.storage_context.persist(persist_dir=str(self.rag_config.persist_dir))
+        except Exception as e:
+            logger.error(f"Failed to add markdown file: {e}")
+            raise e
 
     @staticmethod
     @lru_cache(maxsize=1)
