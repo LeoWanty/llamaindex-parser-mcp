@@ -7,7 +7,7 @@ def test_save_as_markdown(mock_urlopen, tmp_path):
     url = "http://example.com"
     output_file = tmp_path / "test_page.md"
     html_content = "<html><body><h1>Hello</h1><p>This is a test.</p></body></html>"
-    expected_markdown = "Hello\n=====\n\nThis is a test."
+    expected_markdown = "# Hello\n\nThis is a test."
 
     # Mock the response from urlopen
     mock_response = MagicMock()
