@@ -49,9 +49,6 @@ class PageDownloader(BaseModel):
                 f"Output file must be a Markdown file with the .md extension. Got {output_path.suffix} instead."
             )
 
-        output_dir = output_path.parent
-        if output_dir:
-            output_path.mkdir(exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(self.markdown_content)
+        output_path.parent.mkdir(exist_ok=True, parents=True)
+        output_path.write_text(self.markdown_content, encoding="utf-8")
         logging.info(f"Page content saved as Markdown to {output_path}")
