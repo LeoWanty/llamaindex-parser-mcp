@@ -2,7 +2,7 @@ import pytest
 import requests
 from unittest.mock import MagicMock, patch
 
-from src.mcp_llamaindex.utils.crawler import url_to_filename, explore_website
+from mcp_llamaindex.utils.crawler import url_to_filename, explore_website
 
 @pytest.mark.parametrize("url, expected_filename", [
     ("https://example.com", "example-com"),
