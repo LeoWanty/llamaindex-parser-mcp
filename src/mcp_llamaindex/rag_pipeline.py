@@ -252,30 +252,21 @@ You can ask questions about your documents, and the server will retrieve relevan
         ]
         return markdown_files
 
-    def add_markdown_file(self, file_path: str | Path) -> str:
+    def add_markdown_file(self, file_path: str | Path) -> None:
         """
         Adds a new Markdown file to the data directory and updates the index.
 
         Args:
-            file_path (str | Path): The path to the file.
-
-        Returns:
-            str: A status message indicating success or failure.
+            file_path (str): The path to the file.
         """
-        if file_path is None:
-            return "No file provided."
-
         file_path = Path(file_path)
         file_name = file_path.name
         destination_path = self.rag_config.data_dir / file_name
 
-        if destination_path.exists():
-            return f"File '{file_name}' already exists and will not be added again."
+        if file_name in self.list_markdown_files():
+            raise ValueError(f"File '{file_name}' already exists.")
 
         try:
-            # Ensure the data directory exists
-            self.rag_config.data_dir.mkdir(parents=True, exist_ok=True)
-
             # Save in the relevant static dir
             shutil.copy(str(file_path), str(destination_path))
 
@@ -286,15 +277,9 @@ You can ask questions about your documents, and the server will retrieve relevan
             for document in new_documents:
                 self.index.insert(document)
 
-            logger.info(f"Successfully added and indexed '{file_name}'.")
-            return f"Successfully added and indexed '{file_name}'."
-
         except Exception as e:
-            logger.error(f"Failed to add markdown file '{file_name}': {e}")
-            # Clean up if the file was copied but indexing failed
-            if destination_path.exists():
-                destination_path.unlink()
-            return f"Error adding file '{file_name}': {e}"
+            logger.error(f"Failed to add markdown file: {e}")
+            raise e
 
     def _delete_doc_by_filename(self, file_name: str) -> None:
         """
