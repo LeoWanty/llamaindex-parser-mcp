@@ -1,5 +1,7 @@
 import logging
 import urllib.request
+from pathlib import Path
+
 from pydantic import BaseModel
 
 from html2text import HTML2Text
@@ -34,3 +36,22 @@ class PageDownloader(BaseModel):
     def _convert_to_markdown(self):
         """Converts the HTML content to Markdown."""
         return HTML2Text().handle(self.html_content)
+
+    def save_as_markdown(self, output_path: str | Path) -> None:
+        """Saves the Markdown content to a file.
+
+        Args:
+            output_path (str): The path to save the markdown file.
+        """
+        output_path = Path(output_path)
+        if output_path.suffix != ".md":
+            raise ValueError(
+                f"Output file must be a Markdown file with the .md extension. Got {output_path.suffix} instead."
+            )
+
+        output_dir = output_path.parent
+        if output_dir:
+            output_path.mkdir(exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(self.markdown_content)
+        logging.info(f"Page content saved as Markdown to {output_path}")
