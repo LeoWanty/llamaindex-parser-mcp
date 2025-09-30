@@ -183,18 +183,12 @@ You can ask questions about your documents, and the server will retrieve relevan
         Args:
             query (str): The question to ask about the Markdown documents.
             allowed_files (list[str] | None): A list of allowed file names to filter the search.
-                                              If None, all files are considered.
+                                              If None or empty list, all files are considered.
 
         Returns:
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
-        if not allowed_files and allowed_files is not None:
-            return (
-                "No resources selected. Please select at least one resource to query.",
-                [],
-            )
-
         if self.rag_query_engine is None:
             return "Error: RAG pipeline not initialized.", []
 
@@ -286,6 +280,76 @@ You can ask questions about your documents, and the server will retrieve relevan
         except Exception as e:
             logger.error(f"Failed to add markdown file: {e}")
             raise e
+
+    def _delete_doc_by_filename(self, file_name: str) -> None:
+        """
+        Delete nodes using with filename in a ChromaVectorStore.
+
+        Args:
+            file_name (str): The name of the document to delete.
+        """
+        self.index.vector_store._collection.delete(where={"file_name": file_name})
+
+    def _delete_markdown_file(self, file_name: str) -> None:
+        """
+        Deletes one Markdown file from the data directory and the index.
+
+        Args:
+            file_name: file name to delete.
+        """
+        try:
+            # Delete from index vector store
+            self._delete_doc_by_filename(file_name=file_name)
+            # Delete the physical file if it exists
+            destination_path = self.rag_config.data_dir / file_name
+            if destination_path.exists():
+                destination_path.unlink()
+            else:
+                logger.warning(
+                    f"File '{file_name}' not found in data directory. "
+                    "Attempting to remove from index anyway."
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to delete '{file_name}': {e}")
+            raise e
+
+    def delete_markdown_files(self, file_names: list[str]) -> None:
+        """
+        Deletes specified Markdown files from the data directory and the index.
+
+        Args:
+            file_names (list[str]): A list of file names to delete.
+        """
+        if not file_names:
+            logger.warning("No file names provided. No file was deleted.")
+            return None
+
+        deleted_count = 0
+        failed_files = []
+
+        for file_name in file_names:
+            try:
+                self._delete_markdown_file(file_name)
+                deleted_count += 1
+                logger.info(
+                    f"Successfully deleted file and index entries for '{file_name}' (if existing)."
+                )
+            except Exception:
+                failed_files.append(file_name)
+
+        # Log the report on deletion
+        status_parts = []
+        if deleted_count > 0:
+            status_parts.append(f"Successfully deleted {deleted_count} file(s).")
+        if failed_files:
+            status_parts.append(f"Failed to delete: {', '.join(failed_files)}.")
+
+        if status_parts:
+            logger.info(" ".join(status_parts))
+        else:
+            logger.info("No action taken. Files may not have been found or indexed.")
+        return None
 
     @staticmethod
     @lru_cache(maxsize=1)

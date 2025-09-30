@@ -27,18 +27,9 @@ def format_retrieved_nodes(nodes: list[dict]) -> str:
 
 
 def respond(message, chat_history, selected_resources):
-    if not selected_resources:
-        gr.Warning(
-            "No resources selected. Please select at least one resource to query."
-        )
-        bot_answer, nodes = (
-            "No resources selected. Please select at least one resource to query.",
-            [],
-        )
-    else:
-        bot_answer, nodes = rag_server.query_and_get_nodes(
-            message, allowed_files=selected_resources
-        )
+    bot_answer, nodes = rag_server.query_and_get_nodes(
+        message, allowed_files=selected_resources
+    )
 
     nb_nodes = f"Nombre de noeuds récupérés: {len(nodes)}"
     chat_history.append({"role": "user", "content": message})
@@ -64,6 +55,16 @@ def uncheck_all():
     return gr.update(value=[])
 
 
+def delete_files_handler(files_to_delete):
+    if not files_to_delete:
+        gr.Warning("No files selected for deletion.")
+        return "No files selected for deletion.", gr.update()
+
+    status_message = rag_server.delete_markdown_files(files_to_delete)
+    updated_choices = rag_server.list_markdown_files()
+    return status_message, gr.update(choices=updated_choices, value=updated_choices)
+
+
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# RAG Pipeline Explorer")
 
@@ -79,6 +80,9 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                     label="Select resources to include in the RAG pipeline",
                     value=rag_server.list_markdown_files(),
                 )
+
+                delete_btn = gr.Button("Delete Selected Files", variant="stop")
+                delete_status = gr.Markdown()
 
             with gr.Accordion("Add New Resource", open=True):
                 file_uploader = gr.File(
@@ -107,6 +111,11 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
             )
             check_all_btn.click(check_all, [], resource_checklist)
             uncheck_all_btn.click(uncheck_all, [], resource_checklist)
+            delete_btn.click(
+                delete_files_handler,
+                inputs=[resource_checklist],
+                outputs=[delete_status, resource_checklist],
+            )
 
 
 def main():
