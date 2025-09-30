@@ -15,12 +15,10 @@ def url_to_filename(url: str) -> str:
     # Combine network location (domain), path and query
     path = unquote(parsed_url.path)
     filename = parsed_url.netloc + path
-    if parsed_url.query:
-        filename += "?" + parsed_url.query
+    # Do not take query parameters into account
 
-    # Replace invalid filename characters (like ?) with underscores.
-    # We leave /, . and : to be replaced by hyphens or kept for readability.
-    filename = re.sub(r'[\\*?"<>|]', "_", filename)
+    # Replace / and invalid filename characters (like ?) with underscores.
+    filename = re.sub(r'[\\/*?"<>|]', "_", filename)
 
     # Replace path separators and other common separators with hyphens
     filename = re.sub(r"[\s/.]+", "-", filename)

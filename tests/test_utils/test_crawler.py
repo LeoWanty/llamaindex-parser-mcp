@@ -6,13 +6,13 @@ from mcp_llamaindex.utils.crawler import url_to_filename, explore_website
 
 @pytest.mark.parametrize("url, expected_filename", [
     ("https://example.com", "example-com"),
-    ("https://example.com/path/to/page", "example-com-path-to-page"),
-    ("https://example.com/path/with%20spaces", "example-com-path-with-spaces"),
-    ("https://example.com/path?query=param", "example-com-path_query=param"),
+    ("https://example.com/path/to/page", "example-com_path_to_page"),
+    ("https://example.com/path/with%20spaces", "example-com_path_with-spaces"),
+    ("https://example.com/path?query=param", "example-com_path"),
     ("http://localhost:8000", "localhost:8000"),
     ("https://example.com/", "example-com"),
-    ("https://example.com/page.html", "example-com-page-html"),
-    ("https://example.com/a/b.c/d.e.f", "example-com-a-b-c-d-e-f"),
+    ("https://example.com/page.html", "example-com_page-html"),
+    ("https://example.com/a/b.c/d.e.f", "example-com_a_b-c_d-e-f"),
     ("", "index"),
 ])
 def test_url_to_filename(url, expected_filename):
