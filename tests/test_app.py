@@ -75,4 +75,6 @@ def test_respond_function(mock_rag_server):
     assert "Node score: 0.99" in retrieved_display
     assert "Mock content." in retrieved_display
     # respond function pass selected_resources to allowed_files arg of the method
-    mock_rag_server.query_and_get_nodes.assert_called_once_with(message, allowed_files=None)
+    mock_rag_server.query_and_get_nodes.assert_called_once_with(
+        message, allowed_files=None
+    )
