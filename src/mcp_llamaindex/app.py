@@ -27,18 +27,9 @@ def format_retrieved_nodes(nodes: list[dict]) -> str:
 
 
 def respond(message, chat_history, selected_resources):
-    if not selected_resources:
-        gr.Warning(
-            "No resources selected. Please select at least one resource to query."
-        )
-        bot_answer, nodes = (
-            "No resources selected. Please select at least one resource to query.",
-            [],
-        )
-    else:
-        bot_answer, nodes = rag_server.query_and_get_nodes(
-            message, allowed_files=selected_resources
-        )
+    bot_answer, nodes = rag_server.query_and_get_nodes(
+        message, allowed_files=selected_resources
+    )
 
     nb_nodes = f"Nombre de noeuds récupérés: {len(nodes)}"
     chat_history.append({"role": "user", "content": message})

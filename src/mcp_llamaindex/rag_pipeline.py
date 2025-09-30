@@ -183,18 +183,12 @@ You can ask questions about your documents, and the server will retrieve relevan
         Args:
             query (str): The question to ask about the Markdown documents.
             allowed_files (list[str] | None): A list of allowed file names to filter the search.
-                                              If None, all files are considered.
+                                              If None or empty list, all files are considered.
 
         Returns:
             tuple[str, list[dict]]: A tuple containing the generated answer
                                      and a list of retrieved source nodes as dictionaries.
         """
-        if not allowed_files and allowed_files is not None:
-            return (
-                "No resources selected. Please select at least one resource to query.",
-                [],
-            )
-
         if self.rag_query_engine is None:
             return "Error: RAG pipeline not initialized.", []
 

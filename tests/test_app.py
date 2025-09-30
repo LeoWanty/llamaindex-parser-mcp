@@ -61,7 +61,9 @@ def test_respond_function(mock_rag_server):
     message = "What is a mock test?"
 
     # Call the respond function
-    new_msg, updated_chat_history, retrieved_display = respond(message, chat_history)
+    new_msg, updated_chat_history, retrieved_display = respond(
+        message, chat_history, selected_resources=None
+    )
 
     # Assertions
     assert new_msg == ""
@@ -72,4 +74,5 @@ def test_respond_function(mock_rag_server):
     assert "**File:** `mock_doc.md`" in retrieved_display
     assert "Node score: 0.99" in retrieved_display
     assert "Mock content." in retrieved_display
-    mock_rag_server.query_and_get_nodes.assert_called_once_with(message)
+    # respond function pass selected_resources to allowed_files arg of the method
+    mock_rag_server.query_and_get_nodes.assert_called_once_with(message, allowed_files=None)
