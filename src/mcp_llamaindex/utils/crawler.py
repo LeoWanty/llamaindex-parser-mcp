@@ -1,5 +1,8 @@
 import re
-from urllib.parse import urlparse, unquote
+import requests
+from urllib.parse import urlparse, unquote, urljoin
+
+from bs4 import BeautifulSoup
 
 
 def url_to_filename(url: str) -> str:
@@ -32,10 +35,6 @@ def url_to_filename(url: str) -> str:
 
     return filename
 
-
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
 
 def explore_website(base_url: str, max_depth: int = 2, visited: set = None) -> dict:
     """
