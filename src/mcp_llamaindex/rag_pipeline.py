@@ -302,63 +302,75 @@ You can ask questions about your documents, and the server will retrieve relevan
                 destination_path.unlink()
             return f"Error adding file '{file_name}': {e}"
 
-    def delete_markdown_files(self, file_names: list[str]) -> str:
+    def _delete_doc_by_filename(self, file_name: str) -> None:
+        """
+        Delete nodes using with filename in a ChromaVectorStore.
+
+        Args:
+            file_name (str): The name of the document to delete.
+        """
+        self.index.vector_store._collection.delete(where={"file_name": file_name})
+
+    def _delete_markdown_file(self, file_name: str) -> None:
+        """
+        Deletes one Markdown file from the data directory and the index.
+
+        Args:
+            file_name: file name to delete.
+        """
+        try:
+            # Delete from index vector store
+            self._delete_doc_by_filename(file_name=file_name)
+            # Delete the physical file if it exists
+            destination_path = self.rag_config.data_dir / file_name
+            if destination_path.exists():
+                destination_path.unlink()
+            else:
+                logger.warning(
+                    f"File '{file_name}' not found in data directory. "
+                    "Attempting to remove from index anyway."
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to delete '{file_name}': {e}")
+            raise e
+
+    def delete_markdown_files(self, file_names: list[str]) -> None:
         """
         Deletes specified Markdown files from the data directory and the index.
 
         Args:
             file_names (list[str]): A list of file names to delete.
-
-        Returns:
-            str: A status message summarizing the outcome.
         """
         if not file_names:
-            return "No files selected for deletion."
+            logger.warning("No file names provided. No file was deleted.")
+            return None
 
         deleted_count = 0
         failed_files = []
 
         for file_name in file_names:
             try:
-                destination_path = self.rag_config.data_dir / file_name
-                if not destination_path.exists():
-                    logger.warning(
-                        f"File '{file_name}' not found in data directory. "
-                        "Attempting to remove from index anyway."
-                    )
-
-                # The ref_doc_id used by LlamaIndex is the resolved absolute path of the file
-                ref_doc_id = str(destination_path.resolve())
-
-                # This deletes from vector store, index struct, and docstore
-                self.index.delete_ref_doc(ref_doc_id, delete_from_docstore=True)
-
-                # Finally, delete the physical file if it exists
-                if destination_path.exists():
-                    destination_path.unlink()
-
+                self._delete_markdown_file(file_name)
                 deleted_count += 1
                 logger.info(
-                    f"Successfully deleted file and index entries for '{file_name}'."
+                    f"Successfully deleted file and index entries for '{file_name}' (if existing)."
                 )
-
-            except Exception as e:
-                # Catching broad exception because LlamaIndex might raise various errors
-                # if the doc is not found in the docstore, etc.
-                logger.error(f"Failed to delete '{file_name}': {e}")
+            except Exception:
                 failed_files.append(file_name)
 
-        # Constructing the status message
+        # Log the report on deletion
         status_parts = []
         if deleted_count > 0:
             status_parts.append(f"Successfully deleted {deleted_count} file(s).")
         if failed_files:
             status_parts.append(f"Failed to delete: {', '.join(failed_files)}.")
 
-        if not status_parts:
-            return "No action taken. Files may not have been found or indexed."
-
-        return " ".join(status_parts)
+        if status_parts:
+            logger.info(" ".join(status_parts))
+        else:
+            logger.info("No action taken. Files may not have been found or indexed.")
+        return None
 
     @staticmethod
     @lru_cache(maxsize=1)
