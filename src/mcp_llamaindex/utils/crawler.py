@@ -65,12 +65,12 @@ def explore_website(base_url: str, max_depth: int = 2, visited: set = None) -> d
         print(f"Error fetching {base_url}: {e}")
         return {}
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, "html.parser")
 
     links = set()
-    for a_tag in soup.find_all('a', href=True):
-        href = a_tag.get('href')
-        if not href or href.startswith('#'):
+    for a_tag in soup.find_all("a", href=True):
+        href = a_tag.get("href")
+        if not href or href.startswith("#"):
             continue
 
         # Join the URL to handle relative paths
