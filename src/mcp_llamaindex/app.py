@@ -1,5 +1,6 @@
 import gradio as gr
 from mcp_llamaindex.rag_pipeline import DirectoryRagServer
+from mcp_llamaindex.utils.crawler import WebsiteCrawler
 
 # Initialize the RAG server
 rag_server = DirectoryRagServer()
@@ -65,7 +66,7 @@ def delete_files_handler(files_to_delete):
     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
 
-def crawl_website_handler(url):
+def crawl_website_handler(url: str):
     """
     Handler to crawl a website and return the links.
     """
@@ -73,7 +74,11 @@ def crawl_website_handler(url):
         gr.Warning("Please enter a URL.")
         return gr.update(choices=[], value=[])
 
-    links = rag_server.get_website_links(url)
+    if not url:
+        return []
+    crawler = WebsiteCrawler(base_url=url, max_depth=1)
+    _links = crawler.crawl()
+    links =  sorted(list(_links))
 
     if not links:
         gr.Info("No links found at the provided URL.")

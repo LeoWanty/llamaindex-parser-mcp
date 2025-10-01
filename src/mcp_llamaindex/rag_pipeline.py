@@ -353,22 +353,6 @@ You can ask questions about your documents, and the server will retrieve relevan
             logger.info("No action taken. Files may not have been found or indexed.")
         return None
 
-    def get_website_links(self, url: str) -> list[str]:
-        """
-        Crawls a website to get all internal links.
-
-        Args:
-            url (str): The base URL to start crawling from.
-
-        Returns:
-            list[str]: A list of unique internal links found on the website.
-        """
-        if not url:
-            return []
-        crawler = WebsiteCrawler(base_url=url, max_depth=1)
-        links = crawler.crawl()
-        return sorted(list(links))
-
     def crawl_and_download_pages(
         self, directory_name: str, pages_to_download: list[str]
     ) -> str:
