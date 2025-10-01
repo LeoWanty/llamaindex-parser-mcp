@@ -117,7 +117,7 @@ def test_get_website_links(mock_crawler, rag_server: DirectoryRagServer):
 @patch("mcp_llamaindex.rag_pipeline.PageDownloader")
 @patch("mcp_llamaindex.rag_pipeline.SimpleDirectoryReader")
 @patch("mcp_llamaindex.rag_pipeline.url_to_filename")
-def test_crawl_and_download_pages(
+def test_download_web_pages(
     mock_url_to_filename,
     mock_reader,
     mock_downloader,
@@ -125,7 +125,6 @@ def test_crawl_and_download_pages(
     tmp_path: Path,
 ):
     """Test downloading pages, saving them, and adding them to the index."""
-    directory_name = "test_downloads"
     pages_to_download = ["http://example.com/page1", "http://example.com/page2"]
 
     # Mock url_to_filename to return predictable filenames
@@ -133,7 +132,12 @@ def test_crawl_and_download_pages(
 
     # Mock PageDownloader
     mock_downloader_instance = mock_downloader.return_value
-    mock_downloader_instance.save_as_markdown.return_value = None
+
+    def save_markdown_side_effect(output_path):
+        """Create a dummy file to simulate downloading."""
+        output_path.touch()
+
+    mock_downloader_instance.save_as_markdown.side_effect = save_markdown_side_effect
 
     # Mock SimpleDirectoryReader
     mock_document = MagicMock()
@@ -143,17 +147,17 @@ def test_crawl_and_download_pages(
     # Mock the index's insert method
     rag_server.index.insert = MagicMock()
 
-    result = rag_server.crawl_and_download_pages(directory_name, pages_to_download)
+    for url in pages_to_download:
+        rag_server.download_web_page(url)
 
-    assert "Successfully downloaded and indexed 2 page(s)." in result
     assert mock_downloader.call_count == 2
     assert mock_reader.return_value.load_data.call_count == 2
     assert rag_server.index.insert.call_count == 2
 
     # Check that files were "saved" in the correct directory
-    download_dir = rag_server.rag_config.data_dir / directory_name
-    mock_downloader_instance.save_as_markdown.assert_any_call(download_dir / "page1.md")
-    mock_downloader_instance.save_as_markdown.assert_any_call(download_dir / "page2.md")
-
-    # Check that the document metadata was updated
-    assert mock_document.metadata["source_directory"] == directory_name
+    mock_downloader_instance.save_as_markdown.assert_any_call(
+        rag_server.rag_config.data_dir / "page1.md"
+    )
+    mock_downloader_instance.save_as_markdown.assert_any_call(
+        rag_server.rag_config.data_dir / "page2.md"
+    )
