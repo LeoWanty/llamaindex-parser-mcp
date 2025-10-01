@@ -78,7 +78,7 @@ def crawl_website_handler(url: str):
         return []
     crawler = WebsiteCrawler(base_url=url, max_depth=1)
     _links = crawler.crawl()
-    links =  sorted(list(_links))
+    links = sorted(list(_links))
 
     if not links:
         gr.Info("No links found at the provided URL.")
@@ -87,27 +87,35 @@ def crawl_website_handler(url: str):
     return gr.update(choices=links, value=links)
 
 
-def download_pages_handler(directory_name, pages_to_download):
+def download_pages_handler(pages_to_download):
     """
     Handler to download the selected web pages.
     """
-    if not directory_name:
-        gr.Warning("Please enter a directory name.")
-        return "Directory name is required.", gr.update()
-
     if not pages_to_download:
         gr.Warning("No pages selected for download.")
         return "No pages selected.", gr.update()
 
-    status_message = rag_server.crawl_and_download_pages(
-        directory_name, pages_to_download
+    downloaded_count = 0
+    failed_urls = {}
+    for url in pages_to_download:
+        try:
+            rag_server.download_web_page(url=url)
+            downloaded_count += 1
+        except Exception as e:
+            failed_urls[url] = str(e)
+
+    gr.Info(
+        f"Downloaded {downloaded_count} pages (out of {len(pages_to_download)}) as md files."
     )
 
-    # After downloading, refresh the main resource list
     updated_choices = rag_server.list_markdown_files()
-
-    gr.Info(status_message)
-
+    fail_message = r"\n+".join(
+        ["Failed to download the following URLs:"]
+        + [f"{key}: {value}" for key, value in failed_urls.items()]
+    )
+    status_message = (
+        fail_message if failed_urls else "Successfully downloaded all pages."
+    )
     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
 
@@ -149,10 +157,6 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                     links_checklist = gr.CheckboxGroup(
                         label="Select pages to download", interactive=True
                     )
-                    dir_name_input = gr.Textbox(
-                        label="Directory Name",
-                        placeholder="e.g., 'my-documentation'",
-                    )
 
                 download_button = gr.Button(
                     "Download Selected Pages", variant="primary"
@@ -167,7 +171,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
 
                 download_button.click(
                     download_pages_handler,
-                    inputs=[dir_name_input, links_checklist],
+                    inputs=[links_checklist],
                     outputs=[download_status, resource_checklist],
                 )
 
