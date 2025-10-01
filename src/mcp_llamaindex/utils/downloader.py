@@ -1,7 +1,9 @@
 import logging
 import urllib.request
 from pathlib import Path
+from typing import Optional
 
+from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 from html2text import HTML2Text
@@ -9,6 +11,7 @@ from html2text import HTML2Text
 
 class PageDownloader(BaseModel):
     url: str
+    css_selector: Optional[str] = None
     encoding: str = "utf-8"
 
     @property
@@ -35,7 +38,14 @@ class PageDownloader(BaseModel):
 
     def _convert_to_markdown(self):
         """Converts the HTML content to Markdown."""
-        return HTML2Text().handle(self.html_content)
+        if self.css_selector:
+            soup = BeautifulSoup(self.html_content, "html.parser")
+            selected_content = soup.select(self.css_selector)
+            html_content = "".join(str(tag) for tag in selected_content)
+        else:
+            html_content = self.html_content
+
+        return HTML2Text().handle(html_content)
 
     def save_as_markdown(self, output_path: str | Path) -> None:
         """Saves the Markdown content to a file.

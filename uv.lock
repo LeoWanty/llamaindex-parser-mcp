@@ -1763,6 +1763,7 @@ name = "mcp-llamaindex"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "chromadb" },
     { name = "fastmcp" },
     { name = "gradio" },
@@ -1785,6 +1786,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.13.5" },
     { name = "chromadb", specifier = ">=1.0.17" },
     { name = "fastmcp", specifier = ">=2.11.3" },
     { name = "gradio" },
