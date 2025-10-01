@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings",
     "gradio",
     "html2text>=2025.4.15",
+    "beautifulsoup4>=4.13.5",
 ]
 
 [dependency-groups]
