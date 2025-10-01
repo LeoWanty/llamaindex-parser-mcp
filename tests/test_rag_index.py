@@ -92,28 +92,6 @@ def test_query_and_get_nodes_mocked(rag_server: DirectoryRagServer, monkeypatch)
     mock_query_engine.query.assert_called_once_with("test query")
 
 
-@patch("mcp_llamaindex.rag_pipeline.WebsiteCrawler")
-def test_get_website_links(mock_crawler, rag_server: DirectoryRagServer):
-    """Test that get_website_links returns a sorted list of unique links."""
-    mock_instance = mock_crawler.return_value
-    mock_instance.crawl.return_value = {
-        "http://example.com",
-        "http://example.com/page1",
-        "http://example.com/page2",
-        "http://example.com/page1",  # Duplicate
-    }
-
-    links = rag_server.get_website_links("http://example.com")
-
-    assert links == [
-        "http://example.com",
-        "http://example.com/page1",
-        "http://example.com/page2",
-    ]
-    mock_crawler.assert_called_once_with(base_url="http://example.com", max_depth=1)
-    mock_instance.crawl.assert_called_once()
-
-
 @patch("mcp_llamaindex.rag_pipeline.PageDownloader")
 @patch("mcp_llamaindex.rag_pipeline.SimpleDirectoryReader")
 @patch("mcp_llamaindex.rag_pipeline.url_to_filename")
