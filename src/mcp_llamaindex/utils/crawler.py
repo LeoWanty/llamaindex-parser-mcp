@@ -106,3 +106,21 @@ class WebsiteCrawler(BaseModel):
     def crawl(self) -> set[str]:
         self._iterative_crawl(self.base_url)
         return self.links
+
+
+def get_website_links(url: str, max_depth: int = 1) -> list[str]:
+    """
+    Crawls a website to get all internal links up to a specific depth.
+
+    Args:
+        url (str): The base URL to start crawling from.
+        max_depth (int): The maximum depth to crawl.
+
+    Returns:
+        list[str]: A list of unique internal links found on the website.
+    """
+    if not url:
+        return []
+    crawler = WebsiteCrawler(base_url=url, max_depth=max_depth)
+    links = crawler.crawl()
+    return sorted(list(links))

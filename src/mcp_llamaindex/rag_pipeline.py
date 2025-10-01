@@ -31,6 +31,8 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from mcp_llamaindex.config import settings
 from mcp_llamaindex.servers.base import BaseServer
+from mcp_llamaindex.utils.crawler import WebsiteCrawler, url_to_filename
+from mcp_llamaindex.utils.downloader import PageDownloader
 
 logger = get_logger(__name__)
 
@@ -350,6 +352,79 @@ You can ask questions about your documents, and the server will retrieve relevan
         else:
             logger.info("No action taken. Files may not have been found or indexed.")
         return None
+
+    def get_website_links(self, url: str) -> list[str]:
+        """
+        Crawls a website to get all internal links.
+
+        Args:
+            url (str): The base URL to start crawling from.
+
+        Returns:
+            list[str]: A list of unique internal links found on the website.
+        """
+        if not url:
+            return []
+        crawler = WebsiteCrawler(base_url=url, max_depth=1)
+        links = crawler.crawl()
+        return sorted(list(links))
+
+    def crawl_and_download_pages(
+        self, directory_name: str, pages_to_download: list[str]
+    ) -> str:
+        """
+        Downloads a list of web pages as Markdown files and adds them to the vector store.
+
+        Args:
+            directory_name (str): The name of the directory to save the downloaded files in.
+            pages_to_download (list[str]): A list of URLs of the pages to download.
+
+        Returns:
+            str: A status message indicating the result of the operation.
+        """
+        if not directory_name:
+            return "Directory name cannot be empty."
+        if not pages_to_download:
+            return "No pages selected for download."
+
+        download_dir = self.rag_config.data_dir / directory_name
+        download_dir.mkdir(exist_ok=True)
+
+        downloaded_count = 0
+        failed_pages = []
+
+        for page_url in pages_to_download:
+            try:
+                downloader = PageDownloader(url=page_url)
+                file_name = f"{url_to_filename(page_url)}.md"
+                output_path = download_dir / file_name
+                downloader.save_as_markdown(output_path)
+
+                # Add the new file to the vector store
+                new_documents = SimpleDirectoryReader(
+                    input_files=[output_path], required_exts=[".md"]
+                ).load_data()
+                for document in new_documents:
+                    # Assign the directory name as metadata to allow for filtering
+                    document.metadata["source_directory"] = directory_name
+                    self.index.insert(document)
+
+                downloaded_count += 1
+            except Exception as e:
+                logger.error(f"Failed to download {page_url}: {e}")
+                failed_pages.append(page_url)
+
+        status_parts = []
+        if downloaded_count > 0:
+            status_parts.append(
+                f"Successfully downloaded and indexed {downloaded_count} page(s)."
+            )
+        if failed_pages:
+            status_parts.append(
+                f"Failed to download: {', '.join(failed_pages)}."
+            )
+
+        return " ".join(status_parts)
 
     @staticmethod
     @lru_cache(maxsize=1)

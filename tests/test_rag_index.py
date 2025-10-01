@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from mcp_llamaindex.rag_pipeline import DirectoryRagServer, RagConfig
 
@@ -90,3 +90,74 @@ def test_query_and_get_nodes_mocked(rag_server: DirectoryRagServer, monkeypatch)
 
     # Verify that the query method was called
     mock_query_engine.query.assert_called_once_with("test query")
+
+
+@patch("mcp_llamaindex.rag_pipeline.WebsiteCrawler")
+def test_get_website_links(mock_crawler, rag_server: DirectoryRagServer):
+    """Test that get_website_links returns a sorted list of unique links."""
+    mock_instance = mock_crawler.return_value
+    mock_instance.crawl.return_value = {
+        "http://example.com",
+        "http://example.com/page1",
+        "http://example.com/page2",
+        "http://example.com/page1",  # Duplicate
+    }
+
+    links = rag_server.get_website_links("http://example.com")
+
+    assert links == [
+        "http://example.com",
+        "http://example.com/page1",
+        "http://example.com/page2",
+    ]
+    mock_crawler.assert_called_once_with(base_url="http://example.com", max_depth=1)
+    mock_instance.crawl.assert_called_once()
+
+
+@patch("mcp_llamaindex.rag_pipeline.PageDownloader")
+@patch("mcp_llamaindex.rag_pipeline.SimpleDirectoryReader")
+@patch("mcp_llamaindex.rag_pipeline.url_to_filename")
+def test_crawl_and_download_pages(
+    mock_url_to_filename,
+    mock_reader,
+    mock_downloader,
+    rag_server: DirectoryRagServer,
+    tmp_path: Path,
+):
+    """Test downloading pages, saving them, and adding them to the index."""
+    directory_name = "test_downloads"
+    pages_to_download = ["http://example.com/page1", "http://example.com/page2"]
+
+    # Mock url_to_filename to return predictable filenames
+    mock_url_to_filename.side_effect = lambda url: url.split("/")[-1]
+
+    # Mock PageDownloader
+    mock_downloader_instance = mock_downloader.return_value
+    mock_downloader_instance.save_as_markdown.return_value = None
+
+    # Mock SimpleDirectoryReader
+    mock_document = MagicMock()
+    mock_document.metadata = {}
+    mock_reader.return_value.load_data.return_value = [mock_document]
+
+    # Mock the index's insert method
+    rag_server.index.insert = MagicMock()
+
+    result = rag_server.crawl_and_download_pages(directory_name, pages_to_download)
+
+    assert "Successfully downloaded and indexed 2 page(s)." in result
+    assert mock_downloader.call_count == 2
+    assert mock_reader.return_value.load_data.call_count == 2
+    assert rag_server.index.insert.call_count == 2
+
+    # Check that files were "saved" in the correct directory
+    download_dir = rag_server.rag_config.data_dir / directory_name
+    mock_downloader_instance.save_as_markdown.assert_any_call(
+        download_dir / "page1.md"
+    )
+    mock_downloader_instance.save_as_markdown.assert_any_call(
+        download_dir / "page2.md"
+    )
+
+    # Check that the document metadata was updated
+    assert mock_document.metadata["source_directory"] == directory_name

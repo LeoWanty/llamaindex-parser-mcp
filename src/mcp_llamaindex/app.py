@@ -65,6 +65,47 @@ def delete_files_handler(files_to_delete):
     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
 
+def crawl_website_handler(url):
+    """
+    Handler to crawl a website and return the links.
+    """
+    if not url:
+        gr.Warning("Please enter a URL.")
+        return gr.update(choices=[], value=[])
+
+    links = rag_server.get_website_links(url)
+
+    if not links:
+        gr.Info("No links found at the provided URL.")
+        return gr.update(choices=[], value=[])
+
+    return gr.update(choices=links, value=links)
+
+
+def download_pages_handler(directory_name, pages_to_download):
+    """
+    Handler to download the selected web pages.
+    """
+    if not directory_name:
+        gr.Warning("Please enter a directory name.")
+        return "Directory name is required.", gr.update()
+
+    if not pages_to_download:
+        gr.Warning("No pages selected for download.")
+        return "No pages selected.", gr.update()
+
+    status_message = rag_server.crawl_and_download_pages(
+        directory_name, pages_to_download
+    )
+
+    # After downloading, refresh the main resource list
+    updated_choices = rag_server.list_markdown_files()
+
+    gr.Info(status_message)
+
+    return status_message, gr.update(choices=updated_choices, value=updated_choices)
+
+
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# RAG Pipeline Explorer")
 
@@ -93,6 +134,36 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                     upload_file_handler,
                     inputs=[file_uploader],
                     outputs=[upload_status, resource_checklist],
+                )
+
+            with gr.Accordion("Download from Website", open=False):
+                url_input = gr.Textbox(label="Enter Website URL")
+                crawl_button = gr.Button("Crawl Website")
+
+                with gr.Group():
+                    links_checklist = gr.CheckboxGroup(
+                        label="Select pages to download", interactive=True
+                    )
+                    dir_name_input = gr.Textbox(
+                        label="Directory Name",
+                        placeholder="e.g., 'my-documentation'",
+                    )
+
+                download_button = gr.Button(
+                    "Download Selected Pages", variant="primary"
+                )
+                download_status = gr.Markdown()
+
+                crawl_button.click(
+                    crawl_website_handler,
+                    inputs=[url_input],
+                    outputs=[links_checklist],
+                )
+
+                download_button.click(
+                    download_pages_handler,
+                    inputs=[dir_name_input, links_checklist],
+                    outputs=[download_status, resource_checklist],
                 )
 
         with gr.Column(scale=3):
