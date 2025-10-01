@@ -152,12 +152,8 @@ def test_crawl_and_download_pages(
 
     # Check that files were "saved" in the correct directory
     download_dir = rag_server.rag_config.data_dir / directory_name
-    mock_downloader_instance.save_as_markdown.assert_any_call(
-        download_dir / "page1.md"
-    )
-    mock_downloader_instance.save_as_markdown.assert_any_call(
-        download_dir / "page2.md"
-    )
+    mock_downloader_instance.save_as_markdown.assert_any_call(download_dir / "page1.md")
+    mock_downloader_instance.save_as_markdown.assert_any_call(download_dir / "page2.md")
 
     # Check that the document metadata was updated
     assert mock_document.metadata["source_directory"] == directory_name
