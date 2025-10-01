@@ -31,6 +31,8 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 
 from mcp_llamaindex.config import settings
 from mcp_llamaindex.servers.base import BaseServer
+from mcp_llamaindex.utils.crawler import url_to_filename
+from mcp_llamaindex.utils.downloader import PageDownloader
 
 logger = get_logger(__name__)
 
@@ -263,20 +265,37 @@ You can ask questions about your documents, and the server will retrieve relevan
         file_name = file_path.name
         destination_path = self.rag_config.data_dir / file_name
 
-        if file_name in self.list_markdown_files():
-            raise ValueError(f"File '{file_name}' already exists.")
+        exists_in_data_dir = destination_path.exists()
+        file_metadata = self.index.vector_store.client.get(
+            include=[], where={"file_name": file_name}, limit=1
+        )
+        exists_in_index = bool(
+            file_metadata["ids"]
+        )  # if indexes in db exists for the file_name
+        if exists_in_data_dir and exists_in_index:
+            logger.info(
+                f"File '{file_name}' already exists in data directory and index."
+            )
+            return
 
         try:
-            # Save in the relevant static dir
-            shutil.copy(str(file_path), str(destination_path))
+            if not exists_in_data_dir:
+                shutil.copy(str(file_path), str(destination_path))
+            else:
+                logger.info(
+                    f"File '{file_name}' already exists in data directory. Skipping file copy."
+                )
 
-            # Load and insert into index
-            new_documents = SimpleDirectoryReader(
-                input_files=[destination_path], required_exts=[".md"]
-            ).load_data()
-            for document in new_documents:
-                self.index.insert(document)
-
+            if not exists_in_index:
+                new_documents = SimpleDirectoryReader(
+                    input_files=[destination_path], required_exts=[".md"]
+                ).load_data()
+                for document in new_documents:
+                    self.index.insert(document)
+            else:
+                logger.info(
+                    f"File '{file_name}' already exists in index. Skipping index update."
+                )
         except Exception as e:
             logger.error(f"Failed to add markdown file: {e}")
             raise e
@@ -350,6 +369,19 @@ You can ask questions about your documents, and the server will retrieve relevan
         else:
             logger.info("No action taken. Files may not have been found or indexed.")
         return None
+
+    def download_web_page(self, url: str) -> None:
+        """
+        Downloads a list of web pages as Markdown files and adds them to the vector store.
+
+        Args:
+            url (str): A list of URLs of the pages to download.
+        """
+        downloader = PageDownloader(url=url)
+        file_name = f"{url_to_filename(url)}.md"
+        output_path = self.rag_config.data_dir / file_name
+        downloader.save_as_markdown(output_path)
+        self.add_markdown_file(output_path)
 
     @staticmethod
     @lru_cache(maxsize=1)

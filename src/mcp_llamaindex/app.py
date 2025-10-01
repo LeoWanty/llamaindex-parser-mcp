@@ -1,5 +1,6 @@
 import gradio as gr
 from mcp_llamaindex.rag_pipeline import DirectoryRagServer
+from mcp_llamaindex.utils.crawler import WebsiteCrawler
 
 # Initialize the RAG server
 rag_server = DirectoryRagServer()
@@ -65,6 +66,59 @@ def delete_files_handler(files_to_delete):
     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
 
+def crawl_website_handler(url: str):
+    """
+    Handler to crawl a website and return the links.
+    """
+    if not url:
+        gr.Warning("Please enter a URL.")
+        return gr.update(choices=[], value=[])
+
+    if not url:
+        return []
+    crawler = WebsiteCrawler(base_url=url, max_depth=1)
+    _links = crawler.crawl()
+    links = sorted(list(_links))
+
+    if not links:
+        gr.Info("No links found at the provided URL.")
+        return gr.update(choices=[], value=[])
+
+    return gr.update(choices=links, value=links)
+
+
+def download_pages_handler(pages_to_download):
+    """
+    Handler to download the selected web pages.
+    """
+    if not pages_to_download:
+        gr.Warning("No pages selected for download.")
+        return "No pages selected.", gr.update()
+
+    downloaded_count = 0
+    failed_urls = {}
+    for url in pages_to_download:
+        try:
+            rag_server.download_web_page(url=url)
+            downloaded_count += 1
+        except Exception as e:
+            failed_urls[url] = str(e)
+
+    gr.Info(
+        f"Downloaded {downloaded_count} pages (out of {len(pages_to_download)}) as md files."
+    )
+
+    updated_choices = rag_server.list_markdown_files()
+    fail_message = r"\n+".join(
+        ["Failed to download the following URLs:"]
+        + [f"{key}: {value}" for key, value in failed_urls.items()]
+    )
+    status_message = (
+        fail_message if failed_urls else "Successfully downloaded all pages."
+    )
+    return status_message, gr.update(choices=updated_choices, value=updated_choices)
+
+
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# RAG Pipeline Explorer")
 
@@ -93,6 +147,32 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                     upload_file_handler,
                     inputs=[file_uploader],
                     outputs=[upload_status, resource_checklist],
+                )
+
+            with gr.Accordion("Download from Website", open=False):
+                url_input = gr.Textbox(label="Enter Website URL")
+                crawl_button = gr.Button("Crawl Website")
+
+                with gr.Group():
+                    links_checklist = gr.CheckboxGroup(
+                        label="Select pages to download", interactive=True
+                    )
+
+                download_button = gr.Button(
+                    "Download Selected Pages", variant="primary"
+                )
+                download_status = gr.Markdown()
+
+                crawl_button.click(
+                    crawl_website_handler,
+                    inputs=[url_input],
+                    outputs=[links_checklist],
+                )
+
+                download_button.click(
+                    download_pages_handler,
+                    inputs=[links_checklist],
+                    outputs=[download_status, resource_checklist],
                 )
 
         with gr.Column(scale=3):

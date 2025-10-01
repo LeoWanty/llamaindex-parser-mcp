@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from mcp_llamaindex.rag_pipeline import DirectoryRagServer, RagConfig
 
@@ -90,3 +90,52 @@ def test_query_and_get_nodes_mocked(rag_server: DirectoryRagServer, monkeypatch)
 
     # Verify that the query method was called
     mock_query_engine.query.assert_called_once_with("test query")
+
+
+@patch("mcp_llamaindex.rag_pipeline.PageDownloader")
+@patch("mcp_llamaindex.rag_pipeline.SimpleDirectoryReader")
+@patch("mcp_llamaindex.rag_pipeline.url_to_filename")
+def test_download_web_pages(
+    mock_url_to_filename,
+    mock_reader,
+    mock_downloader,
+    rag_server: DirectoryRagServer,
+    tmp_path: Path,
+):
+    """Test downloading pages, saving them, and adding them to the index."""
+    pages_to_download = ["http://example.com/page1", "http://example.com/page2"]
+
+    # Mock url_to_filename to return predictable filenames
+    mock_url_to_filename.side_effect = lambda url: url.split("/")[-1]
+
+    # Mock PageDownloader
+    mock_downloader_instance = mock_downloader.return_value
+
+    def save_markdown_side_effect(output_path):
+        """Create a dummy file to simulate downloading."""
+        output_path.touch()
+
+    mock_downloader_instance.save_as_markdown.side_effect = save_markdown_side_effect
+
+    # Mock SimpleDirectoryReader
+    mock_document = MagicMock()
+    mock_document.metadata = {}
+    mock_reader.return_value.load_data.return_value = [mock_document]
+
+    # Mock the index's insert method
+    rag_server.index.insert = MagicMock()
+
+    for url in pages_to_download:
+        rag_server.download_web_page(url)
+
+    assert mock_downloader.call_count == 2
+    assert mock_reader.return_value.load_data.call_count == 2
+    assert rag_server.index.insert.call_count == 2
+
+    # Check that files were "saved" in the correct directory
+    mock_downloader_instance.save_as_markdown.assert_any_call(
+        rag_server.rag_config.data_dir / "page1.md"
+    )
+    mock_downloader_instance.save_as_markdown.assert_any_call(
+        rag_server.rag_config.data_dir / "page2.md"
+    )
