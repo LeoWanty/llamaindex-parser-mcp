@@ -1,3 +1,4 @@
+import logging
 import re
 import requests
 from urllib.parse import urlparse, unquote, urljoin
@@ -36,7 +37,7 @@ def url_to_filename(url: str) -> str:
     return filename
 
 
-def explore_website(base_url: str, max_depth: int = 2, visited: set = None) -> dict:
+def explore_website(base_url: str, max_depth: int = 2, visited: set | None = None) -> dict:
     """
     Recursively explores a website from a base URL to a specified maximum depth,
     collecting all unique internal links.
@@ -52,6 +53,7 @@ def explore_website(base_url: str, max_depth: int = 2, visited: set = None) -> d
     if visited is None:
         visited = set()
 
+    # Stop exploring
     if max_depth < 0 or base_url in visited:
         return {}
 
@@ -62,7 +64,7 @@ def explore_website(base_url: str, max_depth: int = 2, visited: set = None) -> d
         response = requests.get(base_url)
         response.raise_for_status()  # Raise an exception for bad status codes
     except requests.RequestException as e:
-        print(f"Error fetching {base_url}: {e}")
+        logging.warning(f"Error fetching {base_url}: {e}")
         return {}
 
     soup = BeautifulSoup(response.text, "html.parser")
@@ -73,10 +75,9 @@ def explore_website(base_url: str, max_depth: int = 2, visited: set = None) -> d
         if not href or href.startswith("#"):
             continue
 
-        # Join the URL to handle relative paths
-        full_url = urljoin(base_url, href)
-        # Parse the URL and remove fragment identifiers
-        parsed_url = urlparse(full_url)
+        # Handle relative paths
+        url = urljoin(base_url, href)
+        parsed_url = urlparse(url)
         full_url = parsed_url._replace(fragment="").geturl()
 
         # Check if the link is within the same domain
