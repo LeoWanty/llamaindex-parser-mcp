@@ -27,11 +27,11 @@ class PageDownloader(BaseModel):
                 if response.getcode() == 200:
                     return response.read().decode(self.encoding)
                 else:
-                    print(
-                        f"Error: Failed to download page, status code: {response.getcode()}"
+                    logging.warning(
+                        f"Failed to download page, status code: {response.getcode()}"
                     )
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logging.warning(f"An error occurred: {e}")
 
     def _convert_to_markdown(self):
         """Converts the HTML content to Markdown."""
