@@ -1,6 +1,7 @@
 import logging
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Optional
 
 from bs4 import BeautifulSoup
@@ -22,6 +23,11 @@ class PageDownloader(BaseModel):
     @property
     def markdown_content(self) -> str:
         return self._convert_to_markdown()
+
+    @property
+    def netloc(self) -> str:
+        parsed_url = urlparse(self.url)
+        return parsed_url.netloc
 
     def _download_page(self) -> str:
         """Downloads the HTML content of the page."""
