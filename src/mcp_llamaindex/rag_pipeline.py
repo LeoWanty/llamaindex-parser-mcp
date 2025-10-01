@@ -370,14 +370,15 @@ You can ask questions about your documents, and the server will retrieve relevan
             logger.info("No action taken. Files may not have been found or indexed.")
         return None
 
-    def download_web_page(self, url: str) -> None:
+    def download_web_page(self, url: str, css_selector: str | None = None) -> None:
         """
         Downloads a list of web pages as Markdown files and adds them to the vector store.
 
         Args:
             url (str): A list of URLs of the pages to download.
+            css_selector (str | None): A CSS selector to filter HTML before converting to Markdown.
         """
-        downloader = PageDownloader(url=url)
+        downloader = PageDownloader(url=url, css_selector=css_selector)
         file_name = f"{url_to_filename(url)}.md"
         output_path = self.rag_config.data_dir / file_name
         downloader.save_as_markdown(output_path)

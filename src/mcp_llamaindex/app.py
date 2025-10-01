@@ -87,7 +87,7 @@ def crawl_website_handler(url: str):
     return gr.update(choices=links, value=links)
 
 
-def download_pages_handler(pages_to_download):
+def download_pages_handler(pages_to_download, css_selector):
     """
     Handler to download the selected web pages.
     """
@@ -99,7 +99,7 @@ def download_pages_handler(pages_to_download):
     failed_urls = {}
     for url in pages_to_download:
         try:
-            rag_server.download_web_page(url=url)
+            rag_server.download_web_page(url=url, css_selector=css_selector)
             downloaded_count += 1
         except Exception as e:
             failed_urls[url] = str(e)
@@ -151,6 +151,10 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
 
             with gr.Accordion("Download from Website", open=False):
                 url_input = gr.Textbox(label="Enter Website URL")
+                css_selector_input = gr.Textbox(
+                    label="Filter HTML with CSS selector",
+                    placeholder="Leave empty for no filter. Example selector : main",
+                )
                 crawl_button = gr.Button("Crawl Website")
 
                 with gr.Group():
@@ -171,7 +175,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
 
                 download_button.click(
                     download_pages_handler,
-                    inputs=[links_checklist],
+                    inputs=[links_checklist, css_selector_input],
                     outputs=[download_status, resource_checklist],
                 )
 

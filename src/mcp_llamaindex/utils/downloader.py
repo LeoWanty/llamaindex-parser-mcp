@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from html2text import HTML2Text
 
+
 class PageDownloader(BaseModel):
     url: str
     css_selector: Optional[str] = None
