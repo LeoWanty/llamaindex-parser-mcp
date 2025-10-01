@@ -2,7 +2,7 @@ import pytest
 import requests
 from unittest.mock import MagicMock, patch
 
-from mcp_llamaindex.utils.crawler import url_to_filename, explore_website
+from mcp_llamaindex.utils.crawler import url_to_filename, WebsiteCrawler
 
 
 @pytest.mark.parametrize(
@@ -40,14 +40,17 @@ def test_explore_website_single_level(mock_get):
     """
     mock_get.return_value = mock_response
 
-    hierarchy = explore_website("https://example.com", max_depth=0)
+    crawler = WebsiteCrawler(base_url="https://example.com/", max_depth=0)
+    links = crawler.crawl()
 
-    expected_links = sorted(["https://example.com/page1", "https://example.com/page2"])
+    expected_links = {
+        "https://example.com/",
+        "https://example.com/page1",
+        "https://example.com/page2",
+    }
 
-    assert list(hierarchy.keys()) == ["https://example.com"]
-    assert hierarchy["https://example.com"]["links"] == expected_links
-    assert hierarchy["https://example.com"]["children"] == {}
-    mock_get.assert_called_once_with("https://example.com")
+    assert links == expected_links
+    mock_get.assert_called_once_with("https://example.com/")
 
 
 def mock_requests_get(url, **kwargs):
@@ -76,24 +79,15 @@ def mock_requests_get(url, **kwargs):
 @patch("requests.get", side_effect=mock_requests_get)
 def test_explore_website_recursive(mock_get):
     """Tests the recursive exploration of the website."""
-    hierarchy = explore_website("https://example.com/", max_depth=2)
+    crawler = WebsiteCrawler(base_url="https://example.com/", max_depth=2)
+    links = crawler.crawl()
 
-    expected_hierarchy = {
-        "https://example.com/": {
-            "links": ["https://example.com/page1"],
-            "children": {
-                "https://example.com/page1": {
-                    "links": sorted(
-                        ["https://example.com/", "https://example.com/page2"]
-                    ),
-                    "children": {
-                        "https://example.com/page2": {"links": [], "children": {}}
-                    },
-                }
-            },
-        }
+    expected_links = {
+        "https://example.com/",
+        "https://example.com/page1",
+        "https://example.com/page2",
     }
-    assert hierarchy == expected_hierarchy
+    assert links == expected_links
 
 
 @patch("requests.get")
@@ -112,27 +106,18 @@ def test_explore_website_avoids_cycles(mock_get):
         url, MagicMock(status_code=404, text="Not Found")
     )
 
-    hierarchy = explore_website(
-        "https://example.com/", max_depth=3
-    )  # High depth to test cycle break
+    crawler = WebsiteCrawler(base_url="https://example.com/", max_depth=3)
+    links = crawler.crawl()
 
-    expected_hierarchy = {
-        "https://example.com/": {
-            "links": ["https://example.com/page1"],
-            "children": {
-                "https://example.com/page1": {
-                    "links": ["https://example.com/"],
-                    "children": {},  # Should not re-crawl example.com
-                }
-            },
-        }
-    }
-    assert hierarchy == expected_hierarchy
+    expected_links = {"https://example.com/", "https://example.com/page1"}
+    print(links)
+    assert links == expected_links
 
 
 @patch("requests.get")
 def test_explore_website_handles_request_error(mock_get):
     """Tests that the function handles request errors gracefully."""
     mock_get.side_effect = requests.exceptions.RequestException("Test connection error")
-    hierarchy = explore_website("https://example.com")
-    assert hierarchy == {}
+    crawler = WebsiteCrawler(base_url="https://example.com/")
+    links = crawler.crawl()
+    assert links == {"https://example.com/"}
