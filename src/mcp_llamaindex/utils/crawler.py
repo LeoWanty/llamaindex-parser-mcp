@@ -4,7 +4,7 @@ import requests
 from urllib.parse import urlparse, unquote, urljoin
 
 from bs4 import BeautifulSoup
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 def url_to_filename(url: str) -> str:
@@ -39,10 +39,20 @@ def url_to_filename(url: str) -> str:
 
 
 class WebsiteCrawler(BaseModel):
+    """
+    Crawl a website to get all internal links up to a specific depth.
+    """
     base_url: str
-    max_depth: int = 2
     visited: set = set()
     links: set = set()
+    max_depth: int = Field(
+        0,
+        ge=0,
+        description="Maximum depth of exploration. "
+        "0 for crawling targeted page only. "
+        "1 for crawling links referenced from the targeted page. "
+        "2 for crawling links referenced in second depth level. etc.",
+    )
 
     def _crawl_and_gather_links(self, url: str) -> set[str]:
         """
