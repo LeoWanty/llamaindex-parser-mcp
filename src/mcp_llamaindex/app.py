@@ -66,7 +66,7 @@ def delete_files_handler(files_to_delete):
     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
 
-def crawl_website_handler(url: str):
+def crawl_website_handler(url: str, crawling_depth: int):
     """
     Handler to crawl a website and return the links.
     """
@@ -76,7 +76,7 @@ def crawl_website_handler(url: str):
 
     if not url:
         return []
-    crawler = WebsiteCrawler(base_url=url, max_depth=1)
+    crawler = WebsiteCrawler(base_url=url, max_depth=crawling_depth)
     _links = crawler.crawl()
     links = sorted(list(_links))
 
@@ -152,7 +152,19 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
             with gr.Accordion("Download from Website", open=False):
                 # Step 1 : Crawl the website
                 url_input = gr.Textbox(label="Enter Website URL")
+                crawling_depth_input = gr.Slider(
+                    minimum=1,
+                    maximum=3,
+                    step=1,
+                    label="Crawling depth",
+                    info="""1 for crawling the page only.
+                2 for crawling links referenced in the pages.
+                3 for crawling links referenced in second depth level.
+                Crawl only pages from the target url domain.""",
+                )
+
                 crawl_button = gr.Button("Crawl Website")
+
                 # Step 2 : Downloads relevant links
                 css_selector_input = gr.Textbox(
                     label="Filter HTML with CSS selector",
@@ -171,7 +183,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
 
                 crawl_button.click(
                     crawl_website_handler,
-                    inputs=[url_input],
+                    inputs=[url_input, crawling_depth_input],
                     outputs=[links_checklist],
                 )
 
