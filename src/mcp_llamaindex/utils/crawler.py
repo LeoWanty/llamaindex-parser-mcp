@@ -43,8 +43,6 @@ class WebsiteCrawler(BaseModel):
     Crawl a website to get all internal links up to a specific depth.
     """
     base_url: str
-    visited: set = set()
-    links: set = set()
     max_depth: int = Field(
         0,
         ge=0,
@@ -53,6 +51,8 @@ class WebsiteCrawler(BaseModel):
         "1 for crawling links referenced from the targeted page. "
         "2 for crawling links referenced in second depth level. etc.",
     )
+    _visited: set = set()
+    _links: set = set()
 
     def _crawl_and_gather_links(self, url: str) -> set[str]:
         """
@@ -103,19 +103,19 @@ class WebsiteCrawler(BaseModel):
             None, updates self.links and self.visited with new links found during the crawl.
         """
         # Init
-        self.links.add(current_url)  # The current URL is of interest
+        self._links.add(current_url)  # The current URL is of interest
         _links = self._crawl_and_gather_links(current_url)
-        self.links.update(_links)
-        self.visited.add(current_url)
+        self._links.update(_links)
+        self._visited.add(current_url)
 
         # Iterations
         for link in _links:
-            if current_depth < self.max_depth and link not in self.visited:
+            if current_depth < self.max_depth and link not in self._visited:
                 self._iterative_crawl(link, current_depth + 1)
 
     def crawl(self) -> set[str]:
         self._iterative_crawl(self.base_url)
-        return self.links
+        return self._links
 
 
 def get_website_links(url: str, max_depth: int = 1) -> list[str]:
