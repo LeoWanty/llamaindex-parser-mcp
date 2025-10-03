@@ -98,7 +98,7 @@ You can ask questions about your documents, and the server will retrieve relevan
     def get_tools(self) -> list[FastMCPTool]:
         """Get the tools for the server."""
         return [
-            FastMCPTool.from_function(fn=self.query_markdown_docs),
+            FastMCPTool.from_function(fn=self.query_docs),
             FastMCPTool.from_function(fn=self.get_indexed_files),
         ]
 
@@ -122,7 +122,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         [mcp.add_resource(resource=resource) for resource in self.get_resources()]
         return mcp
 
-    def query_markdown_docs(self, query: str) -> str:
+    def query_docs(self, query: str) -> str:
         """
         Answers questions by performing Retrieval-Augmented Generation (RAG)
         over the local Markdown documentation. Provide a clear and concise
