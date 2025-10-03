@@ -61,9 +61,18 @@ class WebsiteCrawler(BaseModel):
         True,
         description="Only include links within the same domain as the base URL.",
     )
+    only_subpath_links: bool = Field(
+        False,
+        description="Only include links that are subpaths of the base URL.",
+    )
 
     _visited: set = set()
     _links: set = set()
+
+    @property
+    def netloc(self) -> str:
+        parsed_url = urlparse(self.base_url)
+        return parsed_url.netloc
 
     def _crawl_and_gather_links(self, url: str) -> set[str]:
         """
@@ -92,7 +101,6 @@ class WebsiteCrawler(BaseModel):
                     "Searching links from the full page instead."
                 )
 
-        netloc = urlparse(url).netloc
         links = set()
         for a_tag in soup.find_all("a", href=True):
             href = a_tag.get("href")
@@ -104,7 +112,15 @@ class WebsiteCrawler(BaseModel):
             parsed_url = urlparse(link_url)
             full_url = parsed_url._replace(fragment="").geturl()
 
-            if not self.only_domain_links or urlparse(full_url).netloc == netloc:
+            fill_domain_requirements = (
+                not self.only_domain_links or self.netloc == urlparse(link_url).netloc
+            )
+            base_url_path = urlparse(self.base_url).path
+            url_path = parsed_url.path
+            fill_subpath_requirements = (
+                not self.only_subpath_links or url_path.startswith(base_url_path)
+            )
+            if fill_domain_requirements and fill_subpath_requirements:
                 links.add(full_url)
 
         return links
