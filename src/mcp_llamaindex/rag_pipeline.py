@@ -99,6 +99,9 @@ You can ask questions about your documents, and the server will retrieve relevan
         """Get the tools for the server."""
         return [
             FastMCPTool.from_function(fn=self.query_docs),
+            FastMCPTool.from_function(fn=self.download_web_page),
+            FastMCPTool.from_function(fn=self.add_markdown_file),
+            FastMCPTool.from_function(fn=self.delete_markdown_files),
             FastMCPTool.from_function(fn=self.get_indexed_files),
         ]
 
@@ -371,7 +374,7 @@ You can ask questions about your documents, and the server will retrieve relevan
 
     def download_web_page(self, url: str, css_selector: str | None = None) -> None:
         """
-        Downloads a list of web pages as Markdown files and adds them to the vector store.
+        Download the content of web pages as Markdown file and add it to the vector store.
 
         Args:
             url (str): A list of URLs of the pages to download.
