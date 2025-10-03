@@ -99,7 +99,6 @@ You can ask questions about your documents, and the server will retrieve relevan
         """Get the tools for the server."""
         return [
             FastMCPTool.from_function(fn=self.query_markdown_docs),
-            FastMCPTool.from_function(fn=self.query_markdown_docs_bis),
             FastMCPTool.from_function(fn=self.get_indexed_files),
         ]
 
@@ -141,7 +140,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         response = self.rag_query_engine.query(query)
         return str(response)
 
-    async def query_markdown_docs_bis(self, query: str, ctx: Context) -> str:
+    async def query_docs_with_client_llm_sampling(self, query: str, ctx: Context) -> str:
         """
         Answers questions by performing Retrieval-Augmented Generation (RAG)
         over the local Markdown documentation. Provide a clear and concise
@@ -150,8 +149,8 @@ You can ask questions about your documents, and the server will retrieve relevan
         SUMMARIZING IS DONE THROUGH LLM SAMPLING, NOT BY THE SERVER ITSELF.
 
         Args:
-            ctx: FastMCP context.
             query (str): The question to ask about the Markdown documents.
+            ctx: FastMCP context.
 
         Returns:
             str: The generated answer based on the retrieved context.
