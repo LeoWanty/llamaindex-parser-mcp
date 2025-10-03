@@ -153,24 +153,23 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                 # Step 1 : Crawl the website
                 url_input = gr.Textbox(label="Enter Website URL")
                 crawling_depth_input = gr.Slider(
-                    minimum=1,
-                    maximum=3,
+                    minimum=0,
+                    maximum=2,
                     step=1,
                     label="Crawling depth",
-                    info="""1 for crawling the page only.
-                2 for crawling links referenced in the pages.
-                3 for crawling links referenced in second depth level.
+                    info="""0 for crawling the page only.
+                1 for crawling links referenced in the pages.
+                2 for crawling links referenced in second depth level.
                 Crawl only pages from the target url domain.""",
                 )
 
-                crawl_button = gr.Button("Crawl Website")
-
-                # Step 2 : Downloads relevant links
                 css_selector_input = gr.Textbox(
                     label="Filter HTML with CSS selector",
                     placeholder="Leave empty for no filter. Example selector : main",
                 )
+                crawl_button = gr.Button("Crawl Website")
 
+                # Step 2 : Downloads relevant links
                 with gr.Group():
                     links_checklist = gr.CheckboxGroup(
                         label="Select pages to download", interactive=True
