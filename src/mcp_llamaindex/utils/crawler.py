@@ -42,6 +42,7 @@ class WebsiteCrawler(BaseModel):
     """
     Crawl a website to get all internal links up to a specific depth.
     """
+
     base_url: str
     max_depth: int = Field(
         0,
@@ -51,6 +52,11 @@ class WebsiteCrawler(BaseModel):
         "1 for crawling links referenced from the targeted page. "
         "2 for crawling links referenced in second depth level. etc.",
     )
+    only_domain_links: bool = Field(
+        True,
+        description="Only include links within the same domain as the base URL.",
+    )
+
     _visited: set = set()
     _links: set = set()
 
@@ -84,8 +90,7 @@ class WebsiteCrawler(BaseModel):
             parsed_url = urlparse(link_url)
             full_url = parsed_url._replace(fragment="").geturl()
 
-            # Check if the link is within the same domain
-            if urlparse(full_url).netloc == netloc:
+            if not self.only_domain_links or urlparse(full_url).netloc == netloc:
                 links.add(full_url)
 
         return links
