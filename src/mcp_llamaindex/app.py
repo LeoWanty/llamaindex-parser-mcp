@@ -150,12 +150,14 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                 )
 
             with gr.Accordion("Download from Website", open=False):
+                # Step 1 : Crawl the website
                 url_input = gr.Textbox(label="Enter Website URL")
+                crawl_button = gr.Button("Crawl Website")
+                # Step 2 : Downloads relevant links
                 css_selector_input = gr.Textbox(
                     label="Filter HTML with CSS selector",
                     placeholder="Leave empty for no filter. Example selector : main",
                 )
-                crawl_button = gr.Button("Crawl Website")
 
                 with gr.Group():
                     links_checklist = gr.CheckboxGroup(
