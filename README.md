@@ -39,7 +39,7 @@ gradio ./src/mcp_llamaindex/app.py
 
 To run the server in dev mode:
 ```bash
-fastmcp dev src/mcp_llamaindex/server.py
+fastmcp dev src/mcp_llamaindex/mcp_server.py
 ```
 
 ## Configuration
