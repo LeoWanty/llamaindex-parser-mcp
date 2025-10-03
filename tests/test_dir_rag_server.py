@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
-from mcp_llamaindex.rag_pipeline import DirectoryRagServer, RagConfig
+from mcp_llamaindex.dir_rag_server import DirectoryRagServer, RagConfig
 
 
 @pytest.fixture
@@ -92,9 +92,9 @@ def test_query_and_get_nodes_mocked(rag_server: DirectoryRagServer, monkeypatch)
     mock_query_engine.query.assert_called_once_with("test query")
 
 
-@patch("mcp_llamaindex.rag_pipeline.PageDownloader")
-@patch("mcp_llamaindex.rag_pipeline.SimpleDirectoryReader")
-@patch("mcp_llamaindex.rag_pipeline.url_to_filename")
+@patch("mcp_llamaindex.dir_rag_server.PageDownloader")
+@patch("mcp_llamaindex.dir_rag_server.SimpleDirectoryReader")
+@patch("mcp_llamaindex.dir_rag_server.url_to_filename")
 def test_download_web_pages(
     mock_url_to_filename,
     mock_reader,

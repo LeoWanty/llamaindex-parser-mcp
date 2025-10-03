@@ -1,5 +1,5 @@
 import gradio as gr
-from mcp_llamaindex.rag_pipeline import DirectoryRagServer
+from mcp_llamaindex.dir_rag_server import DirectoryRagServer
 from mcp_llamaindex.utils.crawler import WebsiteCrawler
 
 # Initialize the RAG server
