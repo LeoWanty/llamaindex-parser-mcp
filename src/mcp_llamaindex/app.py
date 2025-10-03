@@ -66,7 +66,7 @@ def delete_files_handler(files_to_delete):
     return status_message, gr.update(choices=updated_choices, value=updated_choices)
 
 
-def crawl_website_handler(url: str, crawling_depth: int):
+def crawl_website_handler(url: str, crawling_depth: int, css_selector: str):
     """
     Handler to crawl a website and return the links.
     """
@@ -76,7 +76,16 @@ def crawl_website_handler(url: str, crawling_depth: int):
 
     if not url:
         return []
-    crawler = WebsiteCrawler(base_url=url, max_depth=crawling_depth)
+    crawler = WebsiteCrawler(
+        base_url=url,
+        max_depth=crawling_depth,
+        css_selector=css_selector,
+        only_domain_links=True,
+        only_subpath_links=False,
+    )
+    gr.Info(
+        f"Crawling the website at {url} with a maximum depth of {crawling_depth}..."
+    )
     _links = crawler.crawl()
     links = sorted(list(_links))
 
@@ -182,7 +191,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
 
                 crawl_button.click(
                     crawl_website_handler,
-                    inputs=[url_input, crawling_depth_input],
+                    inputs=[url_input, crawling_depth_input, css_selector_input],
                     outputs=[links_checklist],
                 )
 
