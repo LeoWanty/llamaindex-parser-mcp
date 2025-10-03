@@ -143,7 +143,9 @@ You can ask questions about your documents, and the server will retrieve relevan
         response = self.rag_query_engine.query(query)
         return str(response)
 
-    async def query_docs_with_client_llm_sampling(self, query: str, ctx: Context) -> str:
+    async def query_docs_with_client_llm_sampling(
+        self, query: str, ctx: Context
+    ) -> str:
         """
         Answers questions by performing Retrieval-Augmented Generation (RAG)
         over the local Markdown documentation. Provide a clear and concise
