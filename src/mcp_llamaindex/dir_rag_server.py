@@ -98,8 +98,10 @@ You can ask questions about your documents, and the server will retrieve relevan
     def get_tools(self) -> list[FastMCPTool]:
         """Get the tools for the server."""
         return [
-            FastMCPTool.from_function(fn=self.query_markdown_docs),
-            FastMCPTool.from_function(fn=self.query_markdown_docs_bis),
+            FastMCPTool.from_function(fn=self.query_docs),
+            FastMCPTool.from_function(fn=self.download_web_page),
+            FastMCPTool.from_function(fn=self.add_markdown_file),
+            FastMCPTool.from_function(fn=self.delete_markdown_files),
             FastMCPTool.from_function(fn=self.get_indexed_files),
         ]
 
@@ -123,7 +125,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         [mcp.add_resource(resource=resource) for resource in self.get_resources()]
         return mcp
 
-    def query_markdown_docs(self, query: str) -> str:
+    def query_docs(self, query: str) -> str:
         """
         Answers questions by performing Retrieval-Augmented Generation (RAG)
         over the local Markdown documentation. Provide a clear and concise
@@ -141,7 +143,7 @@ You can ask questions about your documents, and the server will retrieve relevan
         response = self.rag_query_engine.query(query)
         return str(response)
 
-    async def query_markdown_docs_bis(self, query: str, ctx: Context) -> str:
+    async def query_docs_with_client_llm_sampling(self, query: str, ctx: Context) -> str:
         """
         Answers questions by performing Retrieval-Augmented Generation (RAG)
         over the local Markdown documentation. Provide a clear and concise
@@ -150,8 +152,8 @@ You can ask questions about your documents, and the server will retrieve relevan
         SUMMARIZING IS DONE THROUGH LLM SAMPLING, NOT BY THE SERVER ITSELF.
 
         Args:
-            ctx: FastMCP context.
             query (str): The question to ask about the Markdown documents.
+            ctx: FastMCP context.
 
         Returns:
             str: The generated answer based on the retrieved context.
@@ -372,7 +374,7 @@ You can ask questions about your documents, and the server will retrieve relevan
 
     def download_web_page(self, url: str, css_selector: str | None = None) -> None:
         """
-        Downloads a list of web pages as Markdown files and adds them to the vector store.
+        Download the content of web pages as Markdown file and add it to the vector store.
 
         Args:
             url (str): A list of URLs of the pages to download.
